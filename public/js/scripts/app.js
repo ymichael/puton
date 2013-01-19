@@ -7,6 +7,28 @@ define([
     'templates'
 ], function ($, _, Backbone, Pouch, tmpl) {
     
+    // stolen from SO.
+    function syntaxHighlight(json) {
+        if (typeof json !== 'string') {
+             json = JSON.stringify(json, undefined, 2);
+        }
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            var cls = 'number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'key';
+                } else {
+                    cls = 'string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'boolean';
+            } else if (/null/.test(match)) {
+                cls = 'null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        });
+    }
 
     var Log = Backbone.View.extend({
         el: "#log",
@@ -199,9 +221,31 @@ define([
 
     v.Document = Backbone.View.extend({
         className: "doc",
+        initialize: function() {
+            this.show = "collapsed";
+        },
         render: function() {
-            this.$el.html(tmpl.doc(this.model.toJSON()));
+            if (this.show === "collapsed") {
+                this.$el.html(tmpl.doc_collapsed({
+                    key: this.model.id,
+                    trunc: JSON.stringify(this.model.toJSON()).substring(0, 20) + "..."
+                }));
+            } else {
+                this.$el.html(tmpl.doc_full({
+                    key: this.model.id,
+                    value: syntaxHighlight(this.model.toJSON())
+                }));
+            }
             return this;
+        },
+        events: {
+            "click": "toggleView"
+        },
+        toggleView: function(e) {
+            this.show = this.show === "collapsed" ?
+                "full" : "collapsed";
+
+            this.render();
         }
     });
 

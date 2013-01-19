@@ -21,6 +21,19 @@ h2 {
 	margin: 5px 0;
 	padding: 10px;
 }
+
+.key, .value {
+    font-size: 13px;
+}
+.value {
+    color: #888;
+}
+
+pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
+.string { color: green; }
+.number { color: darkorange; }
+.boolean { color: blue; }
+
 #main {
 	width: 500px;
 }
