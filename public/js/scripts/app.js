@@ -11,20 +11,17 @@ define([
     var Log = Backbone.View.extend({
         el: "#log",
         initialize: function() {
-            this.count = 0;
-            var that = this;
-            console.yo = console.log;
-            console.ynfo = console.info;
+            var self = this;
+            self.count = 0;
 
-            console.log = function(str){
-                that.log(str, "log");
-                console.yo.apply(console, Array.prototype.splice.call(arguments));
-            };
-
-            console.info = function(str) {
-                that.log(str, "info");
-                console.ynfo.apply(console, Array.prototype.splice.call(arguments));
-            };
+            ['log','info','error'].forEach(function(type) {
+                var orin = console[type];
+                console[type] = function(str) {
+                    orin.call(console, arguments[0]);
+                    self.log(str, type);
+                    //orin.apply(console, Array.prototype.splice.call(arguments));
+                };
+            });
         },
         log: function(str, type) {
             type = type || "log";
@@ -52,7 +49,7 @@ define([
             }
             if (typeof str === 'object') {
                 this.$el.prepend(
-                    $('<div/>').tree( {
+                    $('<div class="log-'+type+'"/>').tree( {
                         data: datafy(str)
                     }));
             } else {
@@ -87,7 +84,7 @@ define([
             Pouch(dbname, function(err, db) {
                 if (err) {
                     // TODO.
-                    alert(err);
+                    console.error(err);
                     return;
                 }
 
