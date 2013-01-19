@@ -6,7 +6,9 @@ require.config({
 		'backbone': "libs/backbone",
 		'pouch': "libs/pouch",
 		'app': "scripts/app",
-		'templates': "templates/template"
+		'templates': "templates/template",
+		'jquery.cookie': 'libs/jquery.cookie',
+		'state': 'libs/state'
 	},
 	shim: {
 		"underscore": {

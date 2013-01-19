@@ -26,7 +26,7 @@ define([
             
         },
         start: function() {
-            this.logview = new Log();
+            // this.logview = new Log();
             this.currentView = new Main({
                 el: this.$("#main")
             });
