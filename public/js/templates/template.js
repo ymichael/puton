@@ -15,10 +15,15 @@ tmpl.log = "\
 </p>\
 ";
 
-tmpl.doc = "\
+tmpl.doc_full = "\
+<h3 class='key'><%- key %></h3>\
+<pre class='value'><%= value %></pre>\
+";
+
+tmpl.doc_collapsed = "\
 <span class='key'><%- key %></span>\
 &nbsp;\
-<span class='value'><%- value %></span>\
+<span class='value'><%- trunc %></span>\
 ";
 
 tmpl.db = "\
