@@ -8,7 +8,8 @@ require.config({
 		'app': "scripts/app",
 		'templates': "templates/template",
 		'jquery.cookie': 'libs/jquery.cookie',
-		'state': 'libs/state'
+		'state': 'libs/state',
+		'sandbox': 'libs/sandbox'
 	},
 	shim: {
 		"underscore": {
@@ -18,10 +19,6 @@ require.config({
 		"backbone": {
 			deps: ['underscore', 'jquery'],
 			exports: "Backbone"
-		},
-		"pouch": {
-			deps: [],
-			exports: "Pouch"
 		}
 	}
 });
