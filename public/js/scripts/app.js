@@ -1,4 +1,4 @@
-/*global define:true, alert bootstrap:true*/
+/*global define:true, prompt alert bootstrap:true*/
 define([
     'jquery',
     'underscore',
@@ -75,6 +75,9 @@ define([
             this.currentView = new v.Main({
                 el: this.$("#main")
             });
+
+            // tmp.
+            this.selectDB(null, "idb://test");
         },
         events: {
             "changeView": "changeView",
@@ -134,9 +137,17 @@ define([
         initialize: function() {
             this.listenTo(this.model, "all", this.render);
         },
+        events: {
+            "click #adddoc": "addDoc"
+        },
+        addDoc: function(e) {
+            // TODO.
+            var x = prompt("Document: ");
+            console.log(x);
+        },
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
-            this.docview= new v.Documents({
+            this.docview = new v.Documents({
                 el: this.$("#docs"),
                 collection: this.model.docs
             });

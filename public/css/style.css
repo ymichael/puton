@@ -13,10 +13,30 @@ a {
 
 h2 {
 	margin-bottom: 0;
-	padding: bottom: 0;
+	padding-bottom: 0;
+}
+
+.doc {
+	border: solid 1px #eee;
+	margin: 5px 0;
+	padding: 10px;
+}
+#main {
+	width: 500px;
+}
+#toolbar {
+	text-align: right;
+	width: 500px;
+}
+.button {
+	cursor: pointer;
+}
+.button:hover {
+	text-decoration: underline;
 }
 
 #log {
+	z-index: -100;
 	font-size: 13px;
 	color: #555;
 	text-align: right;

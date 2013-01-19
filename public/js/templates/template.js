@@ -32,6 +32,9 @@ tmpl.db = "\
 	<b>update_seq: </b>\
 	<%- update_seq %>\
 </p>\
+<div id='toolbar'>\
+	<a class='button' id='adddoc'>Add document</a>\
+</div>\
 <div id='docs'></div>\
 ";
 
