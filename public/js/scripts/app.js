@@ -262,7 +262,7 @@ define([
             var that = this;
             this.db = options.db;
             this.db.allDocs({include_docs: true}, function(err, res) {
-                that.add(_.pick(res.rows, "doc"));
+                that.add(_.pluck(res.rows, "doc"));
             });
         },
         model: m.Document
