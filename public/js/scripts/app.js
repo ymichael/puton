@@ -163,7 +163,6 @@ define([
     v.Document = Backbone.View.extend({
         className: "doc",
         render: function() {
-            console.log(this.model.toJSON());
             this.$el.html(tmpl.doc(this.model.toJSON()));
             return this;
         }
