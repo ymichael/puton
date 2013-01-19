@@ -44,7 +44,8 @@ define([
                     return;
                 }
 
-                console.log(db);
+                var database = new m.DB(null, {db: db});
+
                 // that.changeView(null, new m.DB(db));
             });
         },
@@ -83,5 +84,17 @@ define([
             });
         }
     });
+
+    var m = {};
+    m.DB = Backbone.Model.extend({
+        initialize: function(attr, options) {
+            this.db = options.db;
+            // bootstrap data
+            this.db.info(function(err, info) {
+
+            });
+        }
+    });
+
     return App;
 });
