@@ -141,9 +141,35 @@ define([
             "click #adddoc": "addDoc"
         },
         addDoc: function(e) {
-            // TODO.
-            var x = prompt("Document: ");
-            console.log(x);
+            var self = this;
+            var x = prompt("Document: ", '{}').trim();
+            try {
+                if (x.length === 0 || x[0] !== '{' || x[x.length-1] !== '}') {
+                    throw("Not a valid object");
+                }
+                try {
+                    x = JSON.parse(x);
+                } catch (err) {
+                    eval("x="+x);
+                }
+
+                if (typeof x !== 'object') {
+                    throw("Not a valid object");
+                }
+
+                self.model.db.put(x, function(err, res) {
+                    if (err) {
+                        console.error(err);
+                    }
+                    self.model.db.get(res.id, function(err, res) {
+                        console.log(res);
+                        self.model.docs.add(res);
+                    });
+                });
+
+            } catch(err) {
+                console.error(err);
+            }
         },
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
