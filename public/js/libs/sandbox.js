@@ -43,7 +43,7 @@ function init(db) {
                 ]
 
             }, function(err, res) {
-                if (err) throw(err);
+                if (err) return console.error(err);
                 console.log('db idb://test set up');
             });
       } else {

@@ -35,6 +35,10 @@ h2 {
 .log-log {
 	color: #888;
 }
+.log-error {
+    color: #933;
+    font-size: 1.2em;
+}
 
 
 
@@ -86,7 +90,13 @@ ul.jqtree-tree .jqtree-toggler {
     border-bottom: none;
     color: #333;
 }
+.log-error ul.jqtree-tree .jqtree-toggler { 
+    color: red;
+}
 
+ul.jqtree-tree div {
+    text-align: left;
+}
 ul.jqtree-tree .jqtree-toggler:hover {
     color: #000;
 }
@@ -96,7 +106,7 @@ ul.jqtree-tree div {
 }
 
 ul.jqtree-tree .jqtree-title {
-    color: #1C4257;
+    /*color: #1C4257;*/
     vertical-align: middle;
 }
 
