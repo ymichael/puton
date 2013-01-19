@@ -23,6 +23,8 @@ h2 {
 	position: absolute;
 	right: 0;
 	top: 0;
+    width: 500px;
+    overflow: auto;
 }
 .log-info {
 	color: #444;

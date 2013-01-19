@@ -18,7 +18,7 @@ require.config({
 			exports: "_"
 		},
 		"backbone": {
-			deps: ['underscore', 'jquery'],
+			deps: ['underscore','jquery','jquery.tree'],
 			exports: "Backbone"
 		},
 		"pouch": {
@@ -28,13 +28,6 @@ require.config({
 		"sandbox": {
 			deps: ['backbone','pouch'],
 			exports: "Sandbox"
-		},
-		"jquery.tree": {
-			deps: ['jquery'],
-			exports: "$.tree"
-		},
-		"app": {
-			deps: ["jquery.tree"]
 		}
 	}
 });

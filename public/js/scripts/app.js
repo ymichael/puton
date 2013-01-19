@@ -50,7 +50,9 @@ define([
             if (typeof str === 'object') {
                 this.$el.prepend(
                     $('<div class="log-'+type+'"/>').tree( {
-                        data: datafy(str)
+                        data: datafy(str),
+                        autoOpen: true,
+                        slide: false
                     }));
             } else {
 
