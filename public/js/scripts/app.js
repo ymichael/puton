@@ -11,12 +11,22 @@ define([
         initialize: function() {
             var that = this;
             console.yo = console.log;
+            console.ynfo = console.info;
+
             console.log = function(str){
                 that.log(str);
-                console.yo(str);
+                console.yo.apply(console, Array.prototype.splice.call(arguments));
+            };
+
+            console.info = function(str) {
+                that.log(str);
+                console.ynfo.apply(console, Array.prototype.splice.call(arguments));
             };
         },
         log: function(str) {
+            if (typeof str !== 'string') {
+                str = JSON.stringify(str);
+            }
             this.$el.append(tmpl.log({log: str}));
         }
     });
@@ -26,7 +36,7 @@ define([
             
         },
         start: function() {
-            // this.logview = new Log();
+            this.logview = new Log();
             this.currentView = new Main({
                 el: this.$("#main")
             });
