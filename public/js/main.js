@@ -8,6 +8,7 @@ require.config({
 		'app': "scripts/app",
 		'templates': "templates/template",
 		'jquery.cookie': 'libs/jquery.cookie',
+		'jquery.tree': 'libs/jquery.tree',
 		'state': 'libs/state',
 		'sandbox': 'libs/sandbox'
 	},
@@ -17,16 +18,20 @@ require.config({
 			exports: "_"
 		},
 		"backbone": {
-			deps: ['underscore', 'jquery'],
+			deps: ['underscore', 'jquery','jquery.tree'],
 			exports: "Backbone"
 		},
 		"pouch": {
 			deps: [],
 			exports: "Pouch"
+		},
+		"sandbox": {
+			deps: ['backbone','pouch'],
+			exports: "Sandbox"
 		}
 	}
 });
-require(['app'], function(App){
+require(['app','sandbox'], function(App){
 	var x = new App();
 	x.start();
 });

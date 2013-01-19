@@ -44,10 +44,10 @@ function init(db) {
 
             }, function(err, res) {
                 if (err) throw(err);
-                alert('db idb://test set up');
+                console.log('db idb://test set up');
             });
-        }
+      } else {
+        console.log('test db already set up');
+      }
     });
 }
-
-alert('wtf');

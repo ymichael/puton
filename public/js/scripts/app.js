@@ -6,6 +6,8 @@ define([
     'pouch',
     'templates'
 ], function ($, _, Backbone, Pouch, tmpl) {
+    
+
     var Log = Backbone.View.extend({
         el: "#log",
         initialize: function() {
@@ -24,12 +26,36 @@ define([
             };
         },
         log: function(str) {
-            if (typeof str !== 'string') {
-                str = JSON.stringify(str);
+            function datafy(obj) {
+                if (typeof obj === 'string') {
+                    return [{label: obj}];
+                } else if ($.isArray(obj)) {
+                    obj.map(function(x) {
+                        return datafy(x);
+                    });
+                    return obj;
+                } else {
+                    var tr = [];
+                    for (var key in obj) {
+                        if (obj.hasOwnProperty(key)) {
+                            tr.push( {
+                                label: key,
+                                children: datafy(obj[key])
+                            });
+                        }
+                    }
+                    return tr;
+                }
             }
-            this.$el.append(tmpl.log({log: str}));
+            this.$el.append(
+                $('<div/>').tree( {
+                    data: datafy(str)
+                }));
+                //tmpl.log({log: str}));
         }
     });
+
+
     var App = Backbone.View.extend({
         el: "#container",
         initialize: function() {
