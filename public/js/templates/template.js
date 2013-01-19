@@ -38,9 +38,14 @@ tmpl.db = "\
 	<%- update_seq %>\
 </p>\
 <div id='toolbar'>\
+    <a class='button' id='query'>Query</a>\
 	<a class='button' id='adddoc'>Add document</a>\
 </div>\
+<div id='tabs'>\
+<div class='tab'>\
 <div id='docs'></div>\
+</div>\
+</div>\
 ";
 
 // ## Compile templates/partials

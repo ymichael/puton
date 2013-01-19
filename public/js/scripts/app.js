@@ -186,7 +186,6 @@ define([
                         console.error(err);
                     }
                     self.model.db.get(res.id, function(err, res) {
-                        console.log(res);
                         self.model.docs.add(res);
                     });
                 });
