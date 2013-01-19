@@ -73,7 +73,7 @@ define([
             
         },
         start: function() {
-            this.logview = new Log();
+            // this.logview = new Log();
             this.currentView = new v.Main({
                 el: this.$("#main")
             });
@@ -138,34 +138,61 @@ define([
         },
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
+            this.docview= new v.Documents({
+                el: this.$("#docs"),
+                collection: this.model.docs
+            });
+            this.docview.render();
         }
     });
 
     v.Documents = Backbone.View.extend({
         initialize: function() {
-
+            this.listenTo(this.collection, "all", this.render);
         },
         render: function() {
+            var fragment = document.createDocumentFragment();
             this.collection.each(function(doc){
-
+                var docview = new v.Document({
+                    model: doc
+                });
+                fragment.appendChild(docview.render().el);
             });
+            this.$el.html(fragment);
+        }
+    });
+
+    v.Document = Backbone.View.extend({
+        className: "doc",
+        render: function() {
+            console.log(this.model.toJSON());
+            this.$el.html(tmpl.doc(this.model.toJSON()));
+            return this;
         }
     });
 
     var m = {};
+    m.Document = Backbone.Model.extend({});
+    m.Documents = Backbone.Collection.extend({
+        initialize: function(models, options) {
+            var that = this;
+            this.db = options.db;
+            this.db.allDocs(function(err, res) {
+                that.add(res.rows);
+            });
+        },
+        model: m.Document
+    });
+
     m.DB = Backbone.Model.extend({
         initialize: function(attr, options) {
             var that = this;
             this.db = options.db;
-            this.docs = new m.Documents();
+            this.docs = new m.Documents(null, {db: this.db});
             
             // bootstrap database
             this.db.info(function(err, info) {
                 that.set(info);
-            });
-
-            this.db.allDocs(function(err, res) {
-                // console.log(res);
             });
         },
         defaults: {
@@ -174,12 +201,6 @@ define([
             "update_seq": ""
         }
     });
-
-    m.Documents = Backbone.Collection.extend({
-        model: m.Document
-    });
-
-    m.Document = Backbone.Model.extend({});
 
     return App;
 });
