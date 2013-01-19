@@ -26,7 +26,7 @@ define([
             
         },
         start: function() {
-            // this.logview = new Log();
+            this.logview = new Log();
             this.currentView = new Main({
                 el: this.$("#main")
             });
@@ -88,11 +88,29 @@ define([
     var m = {};
     m.DB = Backbone.Model.extend({
         initialize: function(attr, options) {
+            var that = this;
             this.db = options.db;
-            // bootstrap data
+            this.docs = new m.Documents();
+            
+            // bootstrap database
             this.db.info(function(err, info) {
-
+                console.log(info);
+                that.set(info);
             });
+
+            this.db.allDocs(function(err, res) {
+                console.log(res);
+            });
+        }
+    });
+
+    m.Documents = Backbone.Collection.extend({
+        model: m.Document
+    });
+
+    m.Document = Backbone.Model.extend({
+        initialize: function() {
+
         }
     });
 
