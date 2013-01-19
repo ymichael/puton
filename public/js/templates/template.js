@@ -4,7 +4,30 @@ define(['underscore'], function(_) {
 // ## Templates
 var tmpl = {};
 
-tmpl.log = "<p class='log'><%- log %></p>";
+tmpl.log = "\
+<p class='log log-<%- type %>'>\
+	<b>\
+		<small class='count'>\
+			<%- count %>\
+		</small>\
+	</b>\
+	<%- log %>\
+</p>\
+";
+
+tmpl.db = "\
+<h2><%- db_name %></h2>\
+<small>(database name)</small>\
+<p>\
+	<b>doc_count: </b>\
+	<%- doc_count %>\
+</p>\
+<p>\
+	<b>update_seq: </b>\
+	<%- update_seq %>\
+</p>\
+<div id='docs'></div>\
+";
 
 // ## Compile templates/partials
 var compiled = {};

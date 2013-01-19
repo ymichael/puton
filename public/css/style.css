@@ -6,3 +6,27 @@ body {
 a {
   color: #00B7FF;
 }
+
+#container {
+	position: relative;
+}
+
+h2 {
+	margin-bottom: 0;
+	padding: bottom: 0;
+}
+
+#log {
+	font-size: 13px;
+	color: #555;
+	text-align: right;
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+.log-info {
+	color: #444;
+}
+.log-log {
+	color: #888;
+}

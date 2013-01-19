@@ -9,25 +9,33 @@ define([
     var Log = Backbone.View.extend({
         el: "#log",
         initialize: function() {
+            this.count = 0;
             var that = this;
             console.yo = console.log;
             console.ynfo = console.info;
 
             console.log = function(str){
-                that.log(str);
+                that.log(str, "log");
                 console.yo.apply(console, Array.prototype.splice.call(arguments));
             };
 
             console.info = function(str) {
-                that.log(str);
+                that.log(str, "info");
                 console.ynfo.apply(console, Array.prototype.splice.call(arguments));
             };
         },
-        log: function(str) {
+        log: function(str, type) {
+            // default
+            type = type || "log";
+
             if (typeof str !== 'string') {
                 str = JSON.stringify(str);
             }
-            this.$el.append(tmpl.log({log: str}));
+            this.$el.prepend(tmpl.log({
+                count: ++this.count,
+                log: str,
+                type: type
+            }));
         }
     });
     var App = Backbone.View.extend({
@@ -37,7 +45,7 @@ define([
         },
         start: function() {
             this.logview = new Log();
-            this.currentView = new Main({
+            this.currentView = new v.Main({
                 el: this.$("#main")
             });
         },
@@ -54,17 +62,28 @@ define([
                     return;
                 }
 
+                // tmp.
+                window.db = db;
+
                 var database = new m.DB(null, {db: db});
 
-                // that.changeView(null, new m.DB(db));
+                that.changeView(null, database);
             });
         },
         changeView: function(e, model) {
-
+            // TODO.
+            // garbage collection
+            this.currentView = new v.DB({
+                el: this.$("#main"),
+                model: model
+            });
+            this.currentView.render();
         }
     });
 
-    var Main = Backbone.View.extend({
+    var v = {};
+
+    v.Main = Backbone.View.extend({
         events: {
             "keydown #db": "submit"
         },
@@ -84,7 +103,16 @@ define([
         }
     });
 
-    var DB = Backbone.View.extend({
+    v.DB = Backbone.View.extend({
+        initialize: function() {
+            this.listenTo(this.model, "all", this.render);
+        },
+        render: function() {
+            this.$el.html(tmpl.db(this.model.toJSON()));
+        }
+    });
+
+    v.Documents = Backbone.View.extend({
         initialize: function() {
 
         },
@@ -104,13 +132,17 @@ define([
             
             // bootstrap database
             this.db.info(function(err, info) {
-                console.log(info);
                 that.set(info);
             });
 
             this.db.allDocs(function(err, res) {
-                console.log(res);
+                // console.log(res);
             });
+        },
+        defaults: {
+            "db_name": "",
+            "doc_count": "",
+            "update_seq": ""
         }
     });
 
@@ -118,11 +150,7 @@ define([
         model: m.Document
     });
 
-    m.Document = Backbone.Model.extend({
-        initialize: function() {
-
-        }
-    });
+    m.Document = Backbone.Model.extend({});
 
     return App;
 });
