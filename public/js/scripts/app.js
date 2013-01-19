@@ -30,6 +30,8 @@ define([
         });
     }
 
+    Backbone.Model.prototype.idAttribute = "_id";
+
     var Log = Backbone.View.extend({
         el: "#log",
         initialize: function() {
@@ -256,7 +258,7 @@ define([
             var that = this;
             this.db = options.db;
             this.db.allDocs(function(err, res) {
-                that.add(res.rows);
+                that.add(_.pick(res.rows, "doc"));
             });
         },
         model: m.Document
