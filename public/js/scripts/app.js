@@ -70,7 +70,7 @@ define([
             
         },
         start: function() {
-            // this.logview = new Log();
+            this.logview = new Log();
             this.currentView = new v.Main({
                 el: this.$("#main")
             });
