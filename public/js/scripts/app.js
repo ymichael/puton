@@ -36,8 +36,16 @@ define([
             "selectDB": "selectDB"
         },
         selectDB: function(e, dbname) {
+            var that = this;
             Pouch(dbname, function(err, db) {
-                console.log(arguments);
+                if (err) {
+                    // TODO.
+                    alert(err);
+                    return;
+                }
+
+                console.log(db);
+                // that.changeView(null, new m.DB(db));
             });
         },
         changeView: function(e, model) {
