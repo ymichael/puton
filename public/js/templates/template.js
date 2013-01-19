@@ -15,6 +15,12 @@ tmpl.log = "\
 </p>\
 ";
 
+tmpl.doc = "\
+<span class='key'><%- key %></span>\
+&nbsp;\
+<span class='value'><%- value %></span>\
+";
+
 tmpl.db = "\
 <h2><%- db_name %></h2>\
 <small>(database name)</small>\
