@@ -227,15 +227,19 @@ define([
             this.show = "collapsed";
         },
         render: function() {
+            var model = this.model;
+            if (('key' in model) === false) {
+                model.key = model.id;
+            }
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
                     key: this.model.id,
-                    trunc: JSON.stringify(this.model.toJSON()).substring(0, 20) + "..."
+                    trunc: JSON.stringify(model.toJSON()).substring(0, 20) + "..."
                 }));
             } else {
                 this.$el.html(tmpl.doc_full({
                     key: this.model.id,
-                    value: syntaxHighlight(this.model.toJSON())
+                    value: syntaxHighlight(model.toJSON())
                 }));
             }
             return this;
@@ -257,7 +261,7 @@ define([
         initialize: function(models, options) {
             var that = this;
             this.db = options.db;
-            this.db.allDocs(function(err, res) {
+            this.db.allDocs({include_docs: true}, function(err, res) {
                 that.add(_.pick(res.rows, "doc"));
             });
         },
