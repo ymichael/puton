@@ -64,7 +64,7 @@ define(['underscore'], function(_) {
             <b>update_seq: </b>\
             <%- update_seq %>\
         </p>\
-        <div id='toolbar'>\
+        <div id='puton-toolbar'>\
         </div>\
         <div id='tabs'>\
         <div class='docs'></div>\
@@ -74,7 +74,7 @@ define(['underscore'], function(_) {
     tmpl.toolbar = "\
 		<a class='button' id='query'>Run Query</a>\
         <a class='button' id='adddoc'>Add document</a>\
-        <div id='tabbuttons'></div>\
+        <div id='puton-tabbuttons'></div>\
     ";
 
     tmpl.tabbutton = "<a class='tabbutton><%- label %></a>";

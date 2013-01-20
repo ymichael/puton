@@ -90,14 +90,14 @@ define([
     });
 
     var App = Backbone.View.extend({
-        el: "#container",
+        el: "#puton-container",
         initialize: function() {
             
         },
         start: function() {
             this.logview = new Log();
             this.currentView = new v.Main({
-                el: this.$("#main")
+                el: this.$("#puton-main")
             });
 
             // tmp.
@@ -127,7 +127,7 @@ define([
             // TODO.
             // garbage collection
             this.currentView = new v.DB({
-                el: this.$("#main"),
+                el: this.$("#puton-main"),
                 model: model
             });
             this.currentView.render();
@@ -226,7 +226,7 @@ define([
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
             this.toolbar = new v.Toolbar({
-                el: this.$("#toolbar")
+                el: this.$("#puton-toolbar")
             });
 
             var all =  new v.Documents({
@@ -270,7 +270,7 @@ define([
                         view: tab
                     });
                     that.tabviews.push(x);
-                    that.$("#tabbuttons").append(x.render().el);
+                    that.$("#puton-tabbuttons").append(x.render().el);
                 });
             }
 
