@@ -4,7 +4,16 @@ body {
 }
 
 #puton-container {
-	position: relative;
+    padding: 20px;
+    overflow: auto;
+
+    background-color: white;
+    position: fixed;
+    top: 80px;
+    left: 80px;
+    right: 80px;
+    bottom: 80px;
+    border: 2px solid black;
 }
 
 .doc {
