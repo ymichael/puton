@@ -34,6 +34,7 @@ define(['underscore'], function(_) {
 
     tmpl.doc_edit = "\
         <textarea class='code-edit' name='code'><%= code %></textarea>\
+        <button class='code-edit-save'>Save</button>\
     ";
 
     tmpl.tabs = "\

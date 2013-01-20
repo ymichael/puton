@@ -355,7 +355,9 @@ define([
             //hasReduce = false;
             this.db.query(query, {reduce: hasReduce, include_docs: true, conflicts: true}, function(_, res) {
                 self.docs.reset();
-                console.debug(res);
+                // TODO: proper result of key value
+                // and remove edit / delete
+                //console.debug(res);
                 res.rows.forEach(function(x, i) {
                     self.docs.add(x.doc);
                 });
@@ -371,7 +373,8 @@ define([
             var fragment = document.createDocumentFragment();
             this.collection.each(function(doc){
                 var docview = new v.Document({
-                    model: doc
+                    model: doc,
+                    db: this.db
                 });
                 fragment.appendChild(docview.render().el);
             });
@@ -381,8 +384,9 @@ define([
 
     v.Document = Backbone.View.extend({
         className: "doc",
-        initialize: function() {
+        initialize: function(opts) {
             this.show = "collapsed";
+            this.db = opts.db;
         },
         render: function() {
             var model = this.model;
@@ -400,10 +404,14 @@ define([
                     value: syntaxHighlight(model.toJSON())
                 }));
             } else if (this.show === 'edit') {
+                var modelJson = model.toJSON();
+                ['_rev','_id'].forEach(function(key) {
+                    if (key in modelJson) delete modelJson[key];
+                });
                 this.$el.html(tmpl.doc_edit({
-                    code: JSON.stringify(model.toJSON(), undefined, 2)
+                    code: JSON.stringify(modelJson, undefined, 2)
                 }));
-                CodeMirror.fromTextArea(this.$el.find('.code-edit').get(0),{
+                this.codeEdit = CodeMirror.fromTextArea(this.$el.find('.code-edit').get(0),{
                     lineNumbers: false,
                     tabSize: 4,
                     indentUnit: 4,
@@ -414,10 +422,33 @@ define([
             }
             return this;
         },
+        saveEdit: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var json = this.codeEdit.getValue().trim();
+            try {
+                if (!json || json[0] !== '{' || json[json.length-1] !== '}' || (json = JSON.parse(json)) === false) {
+                    throw("Not a valid object");
+                }
+                json['_id'] = (this.model.toJSON)['_id'];
+                console.log(this.model);
+                this.db.put(json, {include_docs: true}, function(err, res) {
+console.log(res);
+                    //this.show = "full";
+                    //this.render();
+                });
+            } catch (err) {
+                console.error(err);
+                this.show = "full";
+                this.render();
+            }
+        },
         events: {
             "click .editoption": "editOption",
             "click .deleteoption": "deleteOption",
-            "click": "toggleView"
+            "click": "toggleView",
+            "click .code-edit-save": "saveEdit"
         },
         editOption: function(e) {
             e.preventDefault();
