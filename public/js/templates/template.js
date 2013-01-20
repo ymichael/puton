@@ -16,6 +16,11 @@ tmpl.log = "\
 ";
 
 tmpl.doc_full = "\
+<div class='optionsbar'>\
+	<a class='option editoption'>edit</a>\
+	&nbsp;|&nbsp;\
+	<a class='option deleteoption'>delete</a>\
+</div>\
 <h3 class='key'><%- key %></h3>\
 <pre class='value'><%= value %></pre>\
 ";
@@ -39,6 +44,7 @@ tmpl.db = "\
 </p>\
 <div id='toolbar'>\
     <a class='button' id='query'>Query</a>\
+	&nbsp;|&nbsp;\
 	<a class='button' id='adddoc'>Add document</a>\
 </div>\
 <div id='tabs'>\
