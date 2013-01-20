@@ -49,13 +49,15 @@ define([
             type = type || "log";
 
             function datafy(obj) {
+                var tr;
                 if ($.isArray(obj)) {
-                    obj.map(function(x) {
-                        return datafy(x);
+                    tr = [];
+                    obj.forEach(function(x) {
+                        tr.push(datafy(x));
                     });
-                    return obj;
+                    return tr;
                 } else if (typeof obj === 'object') {
-                    var tr = [];
+                    tr = [];
                     for (var key in obj) {
                         if (obj.hasOwnProperty(key)) {
                             tr.push( {
@@ -215,7 +217,8 @@ define([
         },
         query: function() {
             var query = new v.Query({
-                el: this.$(".docs")
+                el: this.$(".docs"),
+                db: this.model.db
             });
             this.toolbar.addtab(query);
             query.render();
@@ -294,27 +297,67 @@ define([
     });
 
     v.Query = Backbone.View.extend({
-        initialize: function() {
+        initialize: function(opts) {
             this.state = 0;
+            this.db = opts.db;
+            
+            this.docs = new m.Documents(null, {db: this.db, populate: false});
         },
         events: {
             'click .run': 'runQuery'
         },
         render: function() {
+            var self = this;
             if (this.state === 0) {
                 this.$el.html(tmpl.queryInput());
             }
+
+            var map = false;
+            self.cm = {};
+            ['map','reduce'].forEach(function(el) {
+                self.cm[el]  = CodeMirror.fromTextArea(self.$el.find('.code-'+el).get(0),{
+                    lineNumbers: true,
+                    tabSize: 4,
+                    indentUnit: 4,
+                    indentWithTabs: true,
+                    mode: "text/javascript"
+                });
+            });
+            self.cm['map'].focus();
+
+
+            this.documentsView =  new v.Documents({
+                el: this.$el.find(".docs"),
+                collection: this.docs
+            });
+            this.documentsView.render();
+
         },
         runQuery: function() {
-            var map = this.$el.find('.map').val();
-            var reduce = this.$el.find('.reduce').val();
+            var self = this;
+            var map = self.cm['map'].getValue().trim();
+            var reduce = self.cm['reduce'].getValue().trim();
+            var hasReduce;
+            var query = {};
 
-            this.db.query({
-                map: map,
-                reduce: reduce
-            }, {reduce: reduce, include_docs: true, conflicts: true}, function(_, res) {
+
+            eval("query.map = " + map);
+            if (reduce) {
+                eval("query.reduce = " + reduce);
+                hasReduce = true;
+            } else {
+                hasReduce = false;
+            }
+
+            //query = {map: function (doc) {
+            //    emit(doc.id, doc);
+            //}};
+            //hasReduce = false;
+            this.db.query(query, {reduce: hasReduce, include_docs: true, conflicts: true}, function(_, res) {
+                self.docs.reset();
+                console.debug(res);
                 res.rows.forEach(function(x, i) {
-
+                    self.docs.add(x.doc);
                 });
             });
         }
@@ -441,9 +484,12 @@ define([
         initialize: function(models, options) {
             var that = this;
             this.db = options.db;
-            this.db.allDocs({include_docs: true}, function(err, res) {
-                that.add(_.pluck(res.rows, "doc"));
-            });
+            if ('populate' in options && options.populate === false) {
+            } else {
+                this.db.allDocs({include_docs: true}, function(err, res) {
+                    that.add(_.pluck(res.rows, "doc"));
+                });
+            }
         },
         model: m.Document
     });

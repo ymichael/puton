@@ -41,9 +41,16 @@ define(['underscore'], function(_) {
     ";
 
     tmpl.queryInput = "\
-        <textarea class='map' name='map'></textarea>\
-        <textarea class='reduce' name='reduce'></textarea>\
-        <button class='run'>Run Query</button>";
+        Map: \
+        <textarea class='code-edit code-map' name='map'>function(doc) {\n\
+\n\
+\n\}</textarea>\
+        Reduce: \
+        <textarea class='code-edit code-reduce' name='reduce'></textarea>\
+        <button class='run'>Run Query</button>\
+        <div class='docs'></div>\
+        \
+    ";
 
     tmpl.db = "\
         <h2><%- db_name %></h2>\
