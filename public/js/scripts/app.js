@@ -8,7 +8,7 @@ define([
 ], function ($, _, Backbone, Pouch, tmpl) {
     
     // stolen from SO.
-    function syntaxHighlight(json) {
+    function syntaxHighlight(json, nohtml) {
         if (typeof json !== 'string') {
              json = JSON.stringify(json, undefined, 2);
         }
@@ -49,13 +49,15 @@ define([
             type = type || "log";
 
             function datafy(obj) {
+                var tr;
                 if ($.isArray(obj)) {
-                    obj.map(function(x) {
-                        return datafy(x);
+                    tr = [];
+                    obj.forEach(function(x) {
+                        tr.push(datafy(x));
                     });
-                    return obj;
+                    return tr;
                 } else if (typeof obj === 'object') {
-                    var tr = [];
+                    tr = [];
                     for (var key in obj) {
                         if (obj.hasOwnProperty(key)) {
                             tr.push( {
@@ -215,7 +217,8 @@ define([
         },
         query: function() {
             var query = new v.Query({
-                el: this.$(".docs")
+                el: this.$(".docs"),
+                db: this.model.db
             });
             this.toolbar.addtab(query);
             query.render();
@@ -294,27 +297,69 @@ define([
     });
 
     v.Query = Backbone.View.extend({
-        initialize: function() {
+        initialize: function(opts) {
             this.state = 0;
+            this.db = opts.db;
+            
+            this.docs = new m.Documents(null, {db: this.db, populate: false});
         },
         events: {
             'click .run': 'runQuery'
         },
         render: function() {
+            var self = this;
             if (this.state === 0) {
                 this.$el.html(tmpl.queryInput());
             }
+
+            var map = false;
+            self.cm = {};
+            ['map','reduce'].forEach(function(el) {
+                self.cm[el]  = CodeMirror.fromTextArea(self.$el.find('.code-'+el).get(0),{
+                    lineNumbers: true,
+                    tabSize: 4,
+                    indentUnit: 4,
+                    indentWithTabs: true,
+                    mode: "text/javascript"
+                });
+            });
+            self.cm['map'].focus();
+
+
+            this.documentsView =  new v.Documents({
+                el: this.$el.find(".docs"),
+                collection: this.docs
+            });
+            this.documentsView.render();
+
         },
         runQuery: function() {
-            var map = this.$el.find('.map').val();
-            var reduce = this.$el.find('.reduce').val();
+            var self = this;
+            var map = self.cm['map'].getValue().trim();
+            var reduce = self.cm['reduce'].getValue().trim();
+            var hasReduce;
+            var query = {};
 
-            this.db.query({
-                map: map,
-                reduce: reduce
-            }, {reduce: reduce, include_docs: true, conflicts: true}, function(_, res) {
+
+            eval("query.map = " + map);
+            if (reduce) {
+                eval("query.reduce = " + reduce);
+                hasReduce = true;
+            } else {
+                hasReduce = false;
+            }
+
+            //query = {map: function (doc) {
+            //    emit(doc.id, doc);
+            //}};
+            //hasReduce = false;
+            this.db.query(query, {reduce: hasReduce, include_docs: true, conflicts: true}, function(_, res) {
+                self.docs.reset();
+                // TODO: proper result of key value
+                // and remove edit / delete
+                //console.debug(res);
                 res.rows.forEach(function(x, i) {
-                    
+                    self.docs.add(x.doc);
                 });
             });
         }
@@ -328,7 +373,8 @@ define([
             var fragment = document.createDocumentFragment();
             this.collection.each(function(doc){
                 var docview = new v.Document({
-                    model: doc
+                    model: doc,
+                    db: this.db
                 });
                 fragment.appendChild(docview.render().el);
             });
@@ -338,8 +384,9 @@ define([
 
     v.Document = Backbone.View.extend({
         className: "doc",
-        initialize: function() {
+        initialize: function(opts) {
             this.show = "collapsed";
+            this.db = opts.db;
         },
         render: function() {
             var model = this.model;
@@ -351,24 +398,73 @@ define([
                     key: this.model.id,
                     trunc: JSON.stringify(model.toJSON()).substring(0, 20) + "..."
                 }));
-            } else {
+            } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
                     key: this.model.id,
                     value: syntaxHighlight(model.toJSON())
                 }));
+            } else if (this.show === 'edit') {
+                var modelJson = model.toJSON();
+                ['_rev','_id'].forEach(function(key) {
+                    if (key in modelJson) delete modelJson[key];
+                });
+                this.$el.html(tmpl.doc_edit({
+                    code: JSON.stringify(modelJson, undefined, 2)
+                }));
+                this.codeEdit = CodeMirror.fromTextArea(this.$el.find('.code-edit').get(0),{
+                    lineNumbers: false,
+                    tabSize: 4,
+                    indentUnit: 4,
+                    indentWithTabs: true,
+                    mode: "application/json",
+                    autofocus: true
+                });
             }
             return this;
+        },
+        saveEdit: function(e) {
+            var self = this;
+            e.preventDefault();
+            e.stopPropagation();
+
+            var json = this.codeEdit.getValue().trim();
+            try {
+                if (!json || json[0] !== '{' || json[json.length-1] !== '}' || (json = JSON.parse(json)) === false) {
+                    throw("Not a valid object");
+                }
+                
+                json['_id'] = (this.model.toJSON())['_id'];
+                json['_rev'] = (this.model.toJSON())['_rev'];
+
+                this.db.put(json, function(err, res) {
+                    if (err) return console.error(err);
+
+                    this.db.get(json['_id'], function(err, res) {
+                        if (err) return console.error(err);
+                        
+                        self.model.set(res);
+                        self.show = "full";
+                        self.render();
+                    });
+                });
+            } catch (err) {
+                console.error(err);
+                this.show = "full";
+                this.render();
+            }
         },
         events: {
             "click .editoption": "editOption",
             "click .deleteoption": "deleteOption",
-            "click": "toggleView"
+            "click": "toggleView",
+            "click .code-edit-save": "saveEdit"
         },
         editOption: function(e) {
             e.preventDefault();
             e.stopPropagation();
 
-            // TODO.
+            this.show = 'edit';
+            this.render();
         },
         deleteOption: function(e) {
             e.preventDefault();
@@ -382,6 +478,8 @@ define([
         toggleView: function(e) {
             e.preventDefault();
             e.stopPropagation();
+
+            if (this.show ===  'edit') return;
 
             this.show = this.show === "collapsed" ?
                 "full" : "collapsed";
@@ -426,9 +524,12 @@ define([
         initialize: function(models, options) {
             var that = this;
             this.db = options.db;
-            this.db.allDocs({include_docs: true}, function(err, res) {
-                that.add(_.pluck(res.rows, "doc"));
-            });
+            if ('populate' in options && options.populate === false) {
+            } else {
+                this.db.allDocs({include_docs: true}, function(err, res) {
+                    that.add(_.pluck(res.rows, "doc"));
+                });
+            }
         },
         model: m.Document
     });

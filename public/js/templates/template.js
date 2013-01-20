@@ -32,14 +32,26 @@ define(['underscore'], function(_) {
         <span class='value'><%- trunc %></span>\
     ";
 
+    tmpl.doc_edit = "\
+        <textarea class='code-edit' name='code'><%= code %></textarea>\
+        <button class='code-edit-save'>Save</button>\
+    ";
+
     tmpl.tabs = "\
         <div class='docs'></div>\
     ";
 
     tmpl.queryInput = "\
-        <textarea class='map' name='map'></textarea>\
-        <textarea class='reduce' name='reduce'></textarea>\
-        <button class='run'>Run Query</button>";
+        Map: \
+        <textarea class='code-edit code-map' name='map'>function(doc) {\n\
+\n\
+\n\}</textarea>\
+        Reduce: \
+        <textarea class='code-edit code-reduce' name='reduce'></textarea>\
+        <button class='run'>Run Query</button>\
+        <div class='docs'></div>\
+        \
+    ";
 
     tmpl.db = "\
         <h2><%- db_name %></h2>\

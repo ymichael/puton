@@ -10,7 +10,8 @@ require.config({
 		'jquery.cookie': 'libs/jquery.cookie',
 		'jquery.tree': 'libs/jquery.tree',
 		'state': 'libs/state',
-		'sandbox': 'libs/sandbox'
+		'sandbox': 'libs/sandbox',
+		'codemirror': 'libs/codemirror'
 	},
 	shim: {
 		"underscore": {
@@ -18,7 +19,7 @@ require.config({
 			exports: "_"
 		},
 		"backbone": {
-			deps: ['underscore','jquery'],
+			deps: ['underscore','jquery','codemirror'],
 			exports: "Backbone"
 		},
 		"pouch": {
