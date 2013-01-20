@@ -225,10 +225,26 @@ define([
         initialize: function() {
             this.state = 0;
         },
+        events: {
+            'click .run': 'runQuery'
+        },
         render: function() {
             if (this.state === 0) {
-                this.$el.html(tmpl.queryInput);
+                this.$el.html(tmpl.queryInput());
             }
+        },
+        runQuery: function() {
+            var map = this.$el.find('.map').val();
+            var reduce = this.$el.find('.reduce').val();
+
+            this.db.query({
+                map: map,
+                reduce: reduce
+            }, {reduce: reduce, include_docs: true, conflicts: true}, function(_, res) {
+                res.rows.forEach(function(x, i) {
+                    
+                });
+            });
         }
     });
 
