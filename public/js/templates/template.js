@@ -32,6 +32,10 @@ define(['underscore'], function(_) {
         <span class='value'><%- trunc %></span>\
     ";
 
+    tmpl.doc_edit = "\
+        <textarea class='code-edit' name='code'><%= code %></textarea>\
+    ";
+
     tmpl.tabs = "\
         <div class='docs'></div>\
     ";

@@ -8,7 +8,7 @@ define([
 ], function ($, _, Backbone, Pouch, tmpl) {
     
     // stolen from SO.
-    function syntaxHighlight(json) {
+    function syntaxHighlight(json, nohtml) {
         if (typeof json !== 'string') {
              json = JSON.stringify(json, undefined, 2);
         }
@@ -242,7 +242,7 @@ define([
                 reduce: reduce
             }, {reduce: reduce, include_docs: true, conflicts: true}, function(_, res) {
                 res.rows.forEach(function(x, i) {
-                    
+
                 });
             });
         }
@@ -279,11 +279,23 @@ define([
                     key: this.model.id,
                     trunc: JSON.stringify(model.toJSON()).substring(0, 20) + "..."
                 }));
-            } else {
+            } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
                     key: this.model.id,
                     value: syntaxHighlight(model.toJSON())
                 }));
+            } else if (this.show === 'edit') {
+                this.$el.html(tmpl.doc_edit({
+                    code: JSON.stringify(model.toJSON(), undefined, 2)
+                }));
+                CodeMirror.fromTextArea(this.$el.find('.code-edit').get(0),{
+                    lineNumbers: false,
+                    tabSize: 4,
+                    indentUnit: 4,
+                    indentWithTabs: true,
+                    mode: "application/json",
+                    autofocus: true
+                });
             }
             return this;
         },
@@ -296,7 +308,8 @@ define([
             e.preventDefault();
             e.stopPropagation();
 
-            // TODO.
+            this.show = 'edit';
+            this.render();
         },
         deleteOption: function(e) {
             e.preventDefault();
@@ -310,6 +323,8 @@ define([
         toggleView: function(e) {
             e.preventDefault();
             e.stopPropagation();
+
+            if (this.show ===  'edit') return;
 
             this.show = this.show === "collapsed" ?
                 "full" : "collapsed";
