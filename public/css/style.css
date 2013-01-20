@@ -59,6 +59,18 @@ pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
 	text-decoration: underline;
 }
 
+#tabbuttons {
+    text-align: left;
+}
+.tabbutton {
+    display: inline-block;
+    margin: 10px;
+    padding: 5px 0;
+}
+.tabbutton.active {
+    border-bottom: solid 2px #555;
+}
+
 #log {
 	z-index: -100;
 	font-size: 13px;

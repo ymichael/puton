@@ -161,7 +161,12 @@ define([
         events: {
             "click #adddoc": "addDoc",
             "click #query": "query",
-            "deleteDocument": "deleteDocument"
+            "deleteDocument": "deleteDocument",
+            "changeTab": "changeTab"
+        },
+        changeTab: function(e, tab) {
+            tab.render();
+            this.toolbar.active(tab);
         },
         deleteDocument: function(e, doc_id) {
             var that = this;
@@ -209,15 +214,82 @@ define([
             }
         },
         query: function() {
-
+            var query = new v.Query({
+                el: this.$(".docs")
+            });
+            this.toolbar.addtab(query);
+            query.render();
         },
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
-            this.docview = new v.Documents({
+            this.toolbar = new v.Toolbar({
+                el: this.$("#toolbar")
+            });
+
+            var all =  new v.Documents({
                 el: this.$(".docs"),
                 collection: this.model.docs
             });
-            this.docview.render();
+            all.render();
+
+            // add tab
+            all.tabname = "Main";
+            this.toolbar.addtab(all);
+        }
+    });
+
+    v.Toolbar = Backbone.View.extend({
+        initialize: function() {
+            this.tabs = [];
+            this.tabviews = [];
+        },
+        addtab: function(tab) {
+            this.tabs.push(tab);
+            this.render();
+            this.active(tab);
+        },
+        active: function(tab) {
+            _.each(this.tabviews, function(tabview) {
+                if (tabview.view === tab) {
+                    tabview.$el.addClass("active");
+                } else {
+                    tabview.$el.removeClass("active");
+                }
+            });
+        },
+        render: function() {
+            this.$el.html(tmpl.toolbar());
+            var that = this;
+            if (this.tabs.length > 1) {
+                _.each(this.tabs, function(tab, index) {
+                    var x = new v.Tab({
+                        count: index,
+                        view: tab
+                    });
+                    that.tabviews.push(x);
+                    that.$("#tabbuttons").append(x.render().el);
+                });
+            }
+
+            return this;
+        }
+    });
+
+    v.Tab = Backbone.View.extend({
+        className: "tabbutton",
+        initialize: function(options) {
+            this.count = options.count;
+            this.view = options.view;
+        },
+        events: {
+            "click": "changeTab"
+        },
+        changeTab: function() {
+            this.$el.trigger("changeTab", this.view);
+        },
+        render: function() {
+            this.$el.html(this.view.tabname || "Query "+this.count);
+            return this;
         }
     });
 
@@ -318,32 +390,32 @@ define([
         }
     });
 
-    v.Tab = Backbone.View.extend({
-        initialize: function() {
+    // v.Tab = Backbone.View.extend({
+    //     initialize: function() {
 
-        },
-        render: function() {
-            var model = this.model;
-            this.$el.html(tmpl.tab({
-                name: model.name
-            }));
-        }
-    });
-    v.Tabs = Backbone.View.extend({
-        initialize: function() {
-            this.listenTo(this.collection, "all", this.render);
-        },
-        render: function() {
-            var fragment = document.createDocumentFragment();
-            this.collection.each(function(tab){
-                var tabview = new v.Tab({
-                    model: tab
-                });
-                fragment.appendChild(tabview.render().el);
-            });
-            this.$el.html(fragment);
-        }
-    });
+    //     },
+    //     render: function() {
+    //         var model = this.model;
+    //         this.$el.html(tmpl.tab({
+    //             name: model.name
+    //         }));
+    //     }
+    // });
+    // v.Tabs = Backbone.View.extend({
+    //     initialize: function() {
+    //         this.listenTo(this.collection, "all", this.render);
+    //     },
+    //     render: function() {
+    //         var fragment = document.createDocumentFragment();
+    //         this.collection.each(function(tab){
+    //             var tabview = new v.Tab({
+    //                 model: tab
+    //             });
+    //             fragment.appendChild(tabview.render().el);
+    //         });
+    //         this.$el.html(fragment);
+    //     }
+    // });
 
     var m = {};
 
