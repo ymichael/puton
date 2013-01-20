@@ -101,7 +101,7 @@ define([
             });
 
             // tmp.
-            this.selectDB(null, "idb://test");
+            // this.selectDB(null, "idb://test");
         },
         events: {
             "changeView": "changeView",
