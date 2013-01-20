@@ -30,8 +30,6 @@ define([
         });
     }
 
-    Backbone.Model.prototype.idAttribute = "_id";
-
     var Log = Backbone.View.extend({
         el: "#log",
         initialize: function() {
@@ -111,7 +109,6 @@ define([
             var that = this;
             Pouch(dbname, function(err, db) {
                 if (err) {
-                    // TODO.
                     console.error(err);
                     return;
                 }
@@ -162,7 +159,8 @@ define([
             this.listenTo(this.model, "all", this.render);
         },
         events: {
-            "click #adddoc": "addDoc"
+            "click #adddoc": "addDoc",
+            "click #query": "query"
         },
         addDoc: function(e) {
             var self = this;
@@ -194,13 +192,27 @@ define([
                 console.error(err);
             }
         },
+        query: function() {
+
+        },
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
             this.docview = new v.Documents({
-                el: this.$("#docs"),
+                el: this.$(".docs"),
                 collection: this.model.docs
             });
             this.docview.render();
+        }
+    });
+
+    v.Query = Backbone.View.extend({
+        initialize: function() {
+            this.state = 0;
+        },
+        render: function() {
+            if (this.state === 0) {
+                this.$el.html(tmpl.queryInput);
+            }
         }
     });
 
@@ -254,7 +266,37 @@ define([
         }
     });
 
+    v.Tab = Backbone.View.extend({
+        initialize: function() {
+
+        },
+        render: function() {
+            var model = this.model;
+            this.$el.html(tmpl.tab({
+                name: model.name
+            }));
+        }
+    });
+    v.Tabs = Backbone.View.extend({
+        initialize: function() {
+            this.listenTo(this.collection, "all", this.render);
+        },
+        render: function() {
+            var fragment = document.createDocumentFragment();
+            this.collection.each(function(tab){
+                var tabview = new v.Tab({
+                    model: tab
+                });
+                fragment.appendChild(tabview.render().el);
+            });
+            this.$el.html(fragment);
+        }
+    });
+
     var m = {};
+
+    Backbone.Model.prototype.idAttribute = "_id";
+
     m.Document = Backbone.Model.extend({});
     m.Documents = Backbone.Collection.extend({
         initialize: function(models, options) {
@@ -283,6 +325,14 @@ define([
             "doc_count": "",
             "update_seq": ""
         }
+    });
+
+    m.Tab = Backbone.Model.extend({});
+    m.Tabs = Backbone.Collection.extend({
+        initialize: function(models, options) {
+            var that = this;
+        },
+        model: m.Tab
     });
 
     return App;
