@@ -423,6 +423,7 @@ define([
             return this;
         },
         saveEdit: function(e) {
+            var self = this;
             e.preventDefault();
             e.stopPropagation();
 
@@ -431,12 +432,20 @@ define([
                 if (!json || json[0] !== '{' || json[json.length-1] !== '}' || (json = JSON.parse(json)) === false) {
                     throw("Not a valid object");
                 }
-                json['_id'] = (this.model.toJSON)['_id'];
-                console.log(this.model);
-                this.db.put(json, {include_docs: true}, function(err, res) {
-console.log(res);
-                    //this.show = "full";
-                    //this.render();
+                
+                json['_id'] = (this.model.toJSON())['_id'];
+                json['_rev'] = (this.model.toJSON())['_rev'];
+
+                this.db.put(json, function(err, res) {
+                    if (err) return console.error(err);
+
+                    this.db.get(json['_id'], function(err, res) {
+                        if (err) return console.error(err);
+                        
+                        self.model.set(res);
+                        self.show = "full";
+                        self.render();
+                    });
                 });
             } catch (err) {
                 console.error(err);
