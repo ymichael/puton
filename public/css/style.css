@@ -3,10 +3,6 @@ body {
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
-a {
-  color: #00B7FF;
-}
-
 #container {
 	position: relative;
 }
@@ -20,6 +16,17 @@ h2 {
 	border: solid 1px #eee;
 	margin: 5px 0;
 	padding: 10px;
+}
+
+.optionsbar {
+    text-align: right;
+    color: #444;
+}
+.option {
+    cursor: pointer;
+}
+.option:hover {
+    text-decoration: underline;
 }
 
 .key, .value {
@@ -39,6 +46,7 @@ pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
 }
 #toolbar {
 	text-align: right;
+    margin-bottom: 20px;
 	width: 500px;
 }
     #toolbar a {

@@ -1,4 +1,4 @@
-/*global define:true, prompt alert bootstrap:true*/
+/*global define:true, confirm prompt alert bootstrap:true*/
 define([
     'jquery',
     'underscore',
@@ -160,7 +160,21 @@ define([
         },
         events: {
             "click #adddoc": "addDoc",
-            "click #query": "query"
+            "click #query": "query",
+            "deleteDocument": "deleteDocument"
+        },
+        deleteDocument: function(e, doc_id) {
+            var that = this;
+            that.model.db.get(doc_id, function(err, doc) {
+                if (err) {
+                    // TODO.
+                    console.log(err);
+                }
+
+                that.model.db.remove(doc, function(err, response) {
+                    that.model.docs.remove(doc_id);
+                });
+            });
         },
         addDoc: function(e) {
             var self = this;
@@ -184,7 +198,9 @@ define([
                         console.error(err);
                     }
                     self.model.db.get(res.id, function(err, res) {
-                        self.model.docs.add(res);
+                        self.model.docs.add(res, {
+                            at: 0
+                        });
                     });
                 });
 
@@ -256,9 +272,29 @@ define([
             return this;
         },
         events: {
+            "click .editoption": "editOption",
+            "click .deleteoption": "deleteOption",
             "click": "toggleView"
         },
+        editOption: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // TODO.
+        },
+        deleteOption: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (confirm("Delete Document?")) {
+                // this.model.id
+                this.$el.trigger("deleteDocument", this.model.id);
+            }
+        },
         toggleView: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
             this.show = this.show === "collapsed" ?
                 "full" : "collapsed";
 
