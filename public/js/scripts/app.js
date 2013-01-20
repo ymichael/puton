@@ -101,7 +101,7 @@ define([
             });
 
             // tmp.
-            this.selectDB(null, "idb://test");
+            // this.selectDB(null, "idb://test");
         },
         events: {
             "changeView": "changeView",
@@ -367,7 +367,9 @@ define([
 
     v.Documents = Backbone.View.extend({
         initialize: function() {
-            this.listenTo(this.collection, "all", this.render);
+            this.listenTo(this.collection, "reset", this.render);
+            this.listenTo(this.collection, "add", this.render);
+            this.listenTo(this.collection, "remove", this.render);
         },
         render: function() {
             var fragment = document.createDocumentFragment();
