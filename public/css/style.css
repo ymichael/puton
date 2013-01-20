@@ -1,8 +1,10 @@
 body {
   padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-
+h1 {
+  font-weight: 100;
+}
 #puton-container {
     padding: 20px;
     overflow: auto;
@@ -13,7 +15,7 @@ body {
     left: 80px;
     right: 80px;
     bottom: 80px;
-    border: 2px solid black;
+    border: 1px solid #eee;
 }
 
 .doc {
@@ -86,8 +88,8 @@ pre.value {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
 	color: #555;
 	text-align: right;
 	position: absolute;
-	right: 0;
-	top: 0;
+	right: 20px;
+	top: 20px;
     width: 500px;
     overflow: auto;
 }
