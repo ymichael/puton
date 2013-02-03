@@ -405,6 +405,10 @@ define([
                     key: model.toJSON().key || this.model.id,
                     value: syntaxHighlight(model.toJSON())
                 }));
+                if (!this.model.id) {
+                    // todo: more proper hiding of edit/delete
+                    this.$el.find('.optionsbar').hide();
+                }
             } else if (this.show === 'edit') {
                 var modelJson = model.toJSON();
                 ['_rev','_id'].forEach(function(key) {
