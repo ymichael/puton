@@ -359,7 +359,10 @@ define([
                 // and remove edit / delete
                 //console.debug(res);
                 res.rows.forEach(function(x, i) {
-                    self.docs.add(x.doc);
+                    self.docs.add({
+                        key: x.key,
+                        value: x.value
+                    });
                 });
             });
         }
@@ -392,17 +395,14 @@ define([
         },
         render: function() {
             var model = this.model;
-            if (('key' in model) === false) {
-                model.key = model.id;
-            }
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
-                    key: this.model.id,
+                    key: model.toJSON().key || this.model.id,
                     trunc: JSON.stringify(model.toJSON()).substring(0, 20) + "..."
                 }));
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
-                    key: this.model.id,
+                    key: model.toJSON().key || this.model.id,
                     value: syntaxHighlight(model.toJSON())
                 }));
             } else if (this.show === 'edit') {
