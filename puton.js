@@ -8,9 +8,17 @@ var fs = require('fs');
 // Server
 var server = connect();
 server.use(connect.logger("dev"));
-server.use(connect.static(__dirname + "/public"));
+server.use(connect["static"](__dirname + "/public"));
 
 // Main Page
+var bookmarklet = [
+"javascript:(function() {",
+    "var js = document.createElement('script');",
+    "js.setAttribute('src', '/js/bookmarklet.js');",
+    "document.body.appendChild(js);",
+"})()"
+].join('');
+
 // (taken from serve)
 server.use(function(req, res, next) {
     if (req.url !== "/") {
@@ -27,7 +35,9 @@ server.use(function(req, res, next) {
                 pretty: true
             });
 
-            str = fn();
+            str = fn({
+                bookmarklet: bookmarklet
+            });
             res.setHeader("Content-Type", "text/html");
             res.setHeader("Content-Length", Buffer.byteLength(str));
             res.end(str);
