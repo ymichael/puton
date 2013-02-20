@@ -1,8 +1,7 @@
 CWD := $(shell pwd)
 SERVE = ./$(CWD)/node_modules/serve/bin/serve
 
-all: server
+all: start
 
-server:
-	# serving files on port 8080
-	./node_modules/serve/bin/serve --port 8080
+start:
+	node ./puton.js
