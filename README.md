@@ -1,4 +1,5 @@
 # Puton (Futon for PouchDB)
+[![Nodejitsu Deploy Status Badges](https://webhooks.nodejitsu.com/ymichael/puton.png)](https://webops.nodejitsu.com#nodejitsu/webhooks)
 
 Puton is to [PouchDB][1] what Futon is to [CouchDB][2].
 
