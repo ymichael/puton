@@ -1,0 +1,36 @@
+!!!
+html
+    head
+        title Puton: Futon for PouchDB
+        link(rel='stylesheet', type='type/css', href='/css/style.css')
+        link(rel='stylesheet', type='type/css', href='/css/codemirror.css')
+
+    body
+        a(href='#{ bookmarklet }') Puton
+
+        #puton-container
+            h1 Puton
+            #puton-main
+                b
+                    label(for='db') db name: 
+                input#db(type='text')
+            #log
+
+        //- libraries
+        script(type='text/javascript', src="/js/libs/jquery.js")
+        script(type='text/javascript', src="/js/libs/jquery.tree.js")
+        script(type='text/javascript', src="/js/libs/underscore.js")
+        script(type='text/javascript', src="/js/libs/codemirror.js")
+        script(type='text/javascript', src="/js/libs/backbone.js")
+        script(type='text/javascript', src="/js/libs/pouch.js")
+        script(type='text/javascript', src="/js/libs/sandbox.js")
+
+        //- templates
+        script(type='text/javascript', src="/js/templates/template.js")
+
+        //- actual puton code
+        script(type='text/javascript', src='/js/scripts/app.js')
+        
+        script(type='text/javascript')
+            var x = new App();
+            x.start();
