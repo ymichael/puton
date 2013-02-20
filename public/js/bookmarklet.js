@@ -1,20 +1,31 @@
-var loadScript = function() {
-	var js = document.createElement('script');
-	js.src = 'http://puton.jit.su/js/puton.js';
-	document.body.appendChild(js);
-};
-loadScript();
+var host = 'http://puton.jit.su/';
 
 var loadStyle = function (href) {
 	var css = document.createElement('link');
 	css.setAttribute('rel', 'stylesheet');
 	css.setAttribute('type', 'text/css');
-	css.setAttribute('href', href);
+	css.setAttribute('href', host + href);
 	document.body.appendChild(css);
 };
-loadStyle("http://puton.jit.su/css/style.css");
-loadStyle("http://puton.jit.su/css/codemirror.css");
+loadStyle("css/style.css");
+loadStyle("css/codemirror.css");
 
+var loadScript = function(src) {
+	var js = document.createElement('script');
+	js.src = host + src;
+	document.body.appendChild(js);
+};
+loadScript("js/libs/jquery.js");
+loadScript("js/libs/underscore.js");
+loadScript("js/libs/codemirror.js");
+loadScript("js/libs/backbone.js");
+loadScript("js/libs/pouch.js");
+loadScript("js/libs/sandbox.js");
+loadScript("js/templates/app.js");
+loadScript("js/scripts/app.js");
+
+var x = new App();
+x.start();
 
 var container = document.createElement('div');
 container.setAttribute('id', 'puton-container');
@@ -29,7 +40,7 @@ putonmain.setAttribute('id', "puton-main");
 var b = document.createElement('b');
 var label = document.createElement('label');
 label.setAttribute('for', "db");
-label.innerHTML = "db name:";
+label.innerHTML = "db name: ";
 b.appendChild(label);
 
 var input = document.createElement('input');
