@@ -16,6 +16,7 @@ var loadScript = function(src) {
 	document.body.appendChild(js);
 };
 loadScript("js/libs/jquery.js");
+loadScript("js/libs/jquery.tree.js");
 loadScript("js/libs/underscore.js");
 loadScript("js/libs/codemirror.js");
 loadScript("js/libs/backbone.js");
