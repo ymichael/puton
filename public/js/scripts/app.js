@@ -485,33 +485,6 @@ v.Document = Backbone.View.extend({
     }
 });
 
-// v.Tab = Backbone.View.extend({
-//     initialize: function() {
-
-//     },
-//     render: function() {
-//         var model = this.model;
-//         this.$el.html(tmpl.tab({
-//             name: model.name
-//         }));
-//     }
-// });
-// v.Tabs = Backbone.View.extend({
-//     initialize: function() {
-//         this.listenTo(this.collection, "all", this.render);
-//     },
-//     render: function() {
-//         var fragment = document.createDocumentFragment();
-//         this.collection.each(function(tab){
-//             var tabview = new v.Tab({
-//                 model: tab
-//             });
-//             fragment.appendChild(tabview.render().el);
-//         });
-//         this.$el.html(fragment);
-//     }
-// });
-
 var m = {};
 
 Backbone.Model.prototype.idAttribute = "_id";
