@@ -13,6 +13,14 @@ server.use(connect["static"](__dirname + "/public"));
 // Main Page
 var bookmarklet = [
 "javascript:(function() {",
+    // we include jQuery first to make our lives easier.
+    "if (!window.jQuery) {",
+        "var jq = document.createElement('script');",
+        "jq.setAttribute('src', '/js/libs/jquery.js');",
+        "document.body.appendChild(jq);",
+    "}",
+
+    // actual bookmarklet
     "var js = document.createElement('script');",
     "js.setAttribute('src', '/js/bookmarklet.js');",
     "document.body.appendChild(js);",
