@@ -7,6 +7,9 @@ html
 
     body
         a(href='#{ bookmarklet }') Puton
+        script
+            // For development.
+            window.PUTON_HOST = "/"
 
         :markdown
             # Puton: Futon for PouchDB

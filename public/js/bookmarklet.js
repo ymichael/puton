@@ -1,12 +1,10 @@
 $(function() {
-    var host = 'http://puton.jit.su/';
-
     // styles
     var loadStyle = function (href) {
         var css = $("<link>");
         css.attr('rel', 'stylesheet');
         css.attr('type', 'text/css');
-        css.attr('href', host + href);
+        css.attr('href', window.PUTON_HOST + href);
         $("body").append(css);
     };
     loadStyle("css/style.css");
@@ -15,7 +13,7 @@ $(function() {
     // load scripts.
     var loadScript = function(src) {
         var js = $('<script>');
-        js.attr('src', host + src);
+        js.attr('src', window.PUTON_HOST + src);
         $("body").append(js);
     };
 
@@ -40,7 +38,7 @@ var markup = "\
     <div id='log'></div>\
 </div>\
 ";
-    $(markup).appendTo($("body"));
+$(markup).appendTo($("body"));
 });
 
 
