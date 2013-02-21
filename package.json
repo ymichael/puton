@@ -3,7 +3,8 @@
   "version": "0.0.1-4",
   "dependencies": {
     "connect": "*",
-    "jade": "*"
+    "jade": "*",
+    "markdown": "*"
   },
   "subdomain": "puton",
   "scripts": {
