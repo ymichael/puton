@@ -18,10 +18,12 @@ var bookmarklet = [
     "var jq = document.createElement('script');",
     "jq.setAttribute('src', window.PUTON_HOST + 'js/libs/jquery.js');",
     "document.body.appendChild(jq);",
-    // actual bookmarklet
-    "var js = document.createElement('script');",
-    "js.setAttribute('src', window.PUTON_HOST + 'js/bookmarklet.js');",
-    "document.body.appendChild(js);",
+    "jq.onload=function(){",
+    // load actual bookmarklet after jquery is injected
+        "var js = document.createElement('script');",
+        "js.setAttribute('src', window.PUTON_HOST + 'js/bookmarklet.js');",
+        "document.body.appendChild(js);",
+    "};",
 "})()"
 ].join('');
 
