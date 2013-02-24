@@ -18,70 +18,74 @@ $(function() {
         return js;
     };
 
-    var _scripts = {
-        "js/libs/jquery.tree.js": function() {
-            return $ && $('body') && $('body').tree;
+    var srcList = {
+        "backbone": {
+            src: "js/libs/backbone.js",
+            dep: ["underscore"],
         },
-        "js/libs/underscore.js": function() {
-            return _ && _.each;
+        "underscore": {
+            src: "js/libs/underscore.js"
         },
-        "js/libs/codemirror.js": function() {
-            return CodeMirror && CodeMirror.version;
+        "codemirror": {
+            src: "js/libs/codemirror.js"
         },
-        "js/libs/backbone.js": function() {
-            return Backbone && Backbone.VERSION;
+        "sandbox": {
+            src: "js/libs/sandbox.js"
         },
-        "js/libs/pouch.js": function() {
-            return Pouch;
+        "pouch": {
+            src: "js/libs/pouch.js",
         },
-        "js/libs/sandbox.js": function() {
-            return false;
+        "jquery.tree": {
+            src: "js/libs/jquery.tree.js"
         },
-        "js/templates/template.js": function() {
-            return false;
+        "tmpl" : {
+            src: "js/templates/template.js"
         },
-        "js/scripts/app.js": function() {
-            return false;
+        "app": {
+            src: "js/scripts/app.js",
+            dep: ['backbone']
         },
-        "js/scripts/start.js": function() {
-            return false;
+        "start": {
+            src: "js/scripts/start.js",
+            dep: ["app"]
         }
     };
-    var scripts = [];
-    for (var src in _scripts) {
-        scripts.push({src: src, condition: _scripts[src]});
-    }
+    
+    // decide the order to load the scripts
+    // TODO
+    // generate this array from code.
+    var loadOrder = [
+        ["underscore", "codemirror", "pouch", "jquery.tree"],
+        ["backbone", "sandbox", "tmpl"],
+        ["app"],
+        ["start"]
+    ];
 
     var loadScripts = function(scripts) {
         if (scripts.length === 0) {
             return;
         }
 
-        var continuation = function() {
-            loadScripts(scripts);
-        };
-
         var script = scripts.shift();
-        var loaded = false;
-        try {
-            if (script.condition && script.condition()) {
-                loaded = true;
-                continuation();
-            }
-        } catch(e) {
-        } finally {
-            if (!loaded) {
-                var js = scriptTag(script.src);
-                document.body.appendChild(js);
-                js.onload = continuation;
+        var len = script.length;
+        var loaded = 1;
+        var next = function() {
+            if (loaded === len) {
+                loadScripts(scripts);
+            } else {
+                loaded++;
             }
         }
+
+        script.forEach(function(js) {
+            var js = scriptTag(srcList[js].src);
+            document.body.appendChild(js);
+            js.onload = next;
+        })
     };
 
-
-
     // load scripts sequentially.
-    loadScripts(scripts);
+    loadScripts(loadOrder);
 
 
 
