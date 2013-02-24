@@ -134,12 +134,16 @@ v.Main = Backbone.View.extend({
     submit: function(e) {
 
         if (e.keyCode === 13) {
-            var dbname = this.$("#db").val();
+            var dbname = this.$("#db").val().trim();
 
             // prevent empty string
             if (dbname.length === 0) {
                 // noop.
                 return;
+            }
+
+            if (!dbname.match(/:\/\//)) {
+                dbname = "idb://" + dbname;
             }
 
             this.$el.trigger('selectDB', dbname);
