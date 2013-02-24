@@ -30,7 +30,8 @@ $(function() {
             src: "js/libs/codemirror.js"
         },
         "sandbox": {
-            src: "js/libs/sandbox.js"
+            src: "js/libs/sandbox.js",
+            dep: ['app']
         },
         "pouch": {
             src: "js/libs/pouch.js",
@@ -51,15 +52,34 @@ $(function() {
         }
     };
     
+    // inefficient, but works
+    function generateLoadOrder(srcList) {
+        function getDepth(src) {
+            if (typeof srcList[src] === 'undefined') throw('Dependency ' + src + 'not defined');
+            if (typeof srcList[src].dep === 'undefined') return 0;
+            var d = 0;
+            for (var i=0;i<srcList[src].dep.length;++i) {
+                var nd = getDepth(srcList[src].dep[i]);
+                if (nd > d) d = nd;
+            }
+            return d+1;
+        }
+        var tr = [], depth;
+        for (var src in srcList) {
+            if (srcList.hasOwnProperty(src)) {
+                depth = getDepth(src);
+                if (typeof tr[depth] === 'undefined') tr[depth] = [];
+                tr[depth].push(src);
+
+            }
+        }
+        return tr;
+    }
+
     // decide the order to load the scripts
     // TODO
     // generate this array from code.
-    var loadOrder = [
-        ["underscore", "codemirror", "pouch", "jquery.tree"],
-        ["backbone", "sandbox", "tmpl"],
-        ["app"],
-        ["start"]
-    ];
+    var loadOrder = generateLoadOrder(srcList);
 
     var loadScripts = function(scripts) {
         if (scripts.length === 0) {
@@ -75,13 +95,13 @@ $(function() {
             } else {
                 loaded++;
             }
-        }
+        };
 
         script.forEach(function(js) {
             var js = scriptTag(srcList[js].src);
             document.body.appendChild(js);
             js.onload = next;
-        })
+        });
     };
 
     // load scripts sequentially.
