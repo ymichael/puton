@@ -18,29 +18,67 @@ $(function() {
         return js;
     };
 
-    var scripts = [
-        "js/libs/jquery.tree.js",
-        "js/libs/underscore.js",
-        "js/libs/codemirror.js",
-        "js/libs/backbone.js",
-        "js/libs/pouch.js",
-        "js/libs/sandbox.js",
-        "js/templates/template.js",
-        "js/scripts/app.js",
-        "js/scripts/start.js"
-    ];
+    var _scripts = {
+        "js/libs/jquery.tree.js": function() {
+            return $ && $('body') && $('body').tree;
+        },
+        "js/libs/underscore.js": function() {
+            return _ && _.each;
+        },
+        "js/libs/codemirror.js": function() {
+            return CodeMirror && CodeMirror.version;
+        },
+        "js/libs/backbone.js": function() {
+            return Backbone && Backbone.VERSION;
+        },
+        "js/libs/pouch.js": function() {
+            return Pouch;
+        },
+        "js/libs/sandbox.js": function() {
+            return false;
+        },
+        "js/templates/template.js": function() {
+            return false;
+        },
+        "js/scripts/app.js": function() {
+            return false;
+        },
+        "js/scripts/start.js": function() {
+            return false;
+        }
+    };
+    var scripts = [];
+    for (var src in _scripts) {
+        scripts.push({src: src, condition: _scripts[src]});
+    }
 
     var loadScripts = function(scripts) {
         if (scripts.length === 0) {
             return;
         }
 
-        var js = scriptTag(scripts.shift());
-        document.body.appendChild(js);
-        js.onload = function() {
+        var continuation = function() {
             loadScripts(scripts);
         };
+
+        var script = scripts.shift();
+        var loaded = false;
+        try {
+            if (script.condition && script.condition()) {
+                loaded = true;
+                continuation();
+            }
+        } catch(e) {
+        } finally {
+            if (!loaded) {
+                var js = scriptTag(script.src);
+                document.body.appendChild(js);
+                js.onload = continuation;
+            }
+        }
     };
+
+
 
     // load scripts sequentially.
     loadScripts(scripts);
@@ -60,6 +98,3 @@ var markup = "\
 ";
 $(markup).appendTo($("body"));
 });
-
-
-
