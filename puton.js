@@ -4,28 +4,51 @@
 var connect = require('connect');
 var jade = require('jade');
 var fs = require('fs');
+var production = process.env.NODE_ENV === "production";
 
 // Server
 var server = connect();
 server.use(connect.logger("dev"));
-server.use(connect["static"](__dirname + "/public"));
 
-// Main Page
-var bookmarklet = [
-"javascript:(function() {",
-    "window.PUTON_HOST = window.PUTON_HOST || 'http://puton.jit.su/';",
-    // we include jQuery first to make our lives easier.
-    "var jq = document.createElement('script');",
-    "jq.setAttribute('src', PUTON_HOST + 'js/libs/jquery.js');",
-    "document.body.appendChild(jq);",
-    "jq.onload=function(){",
-        // load actual bookmarklet after jquery is injected
-        "var js = document.createElement('script');",
-        "js.setAttribute('src', window.PUTON_HOST + 'js/bookmarklet.js');",
-        "document.body.appendChild(js);",
-    "};",
-"})()"
-].join('');
+// Production
+var bookmarklet;
+if (production) {
+    server.use(connect["static"](__dirname + "/dist"));
+    // Main Page
+    bookmarklet = [
+    "javascript:(function() {",
+        "window.PUTON_HOST = window.PUTON_HOST || 'http://puton.jit.su/';",
+        // puton
+        "var puton = document.createElement('script');",
+        "puton.setAttribute('src', PUTON_HOST + 'release/puton.min.js');",
+        "document.body.appendChild(puton);",
+
+        // css
+        "var css = document.createElement('link');",
+        "css.setAttribute('rel', 'stylesheet');",
+        "css.setAttribute('type', 'text/css');",
+        "css.setAttribute('href', PUTON_HOST + 'release/puton.css');",
+        "document.body.appendChild(css);",
+    "})()"
+    ].join('');
+} else {
+    server.use(connect["static"](__dirname + "/public"));
+    bookmarklet = [
+    "javascript:(function() {",
+        "window.PUTON_HOST = window.PUTON_HOST || 'http://puton.jit.su/';",
+        // we include jQuery first to make our lives easier.
+        "var jq = document.createElement('script');",
+        "jq.setAttribute('src', PUTON_HOST + 'js/libs/jquery.js');",
+        "document.body.appendChild(jq);",
+        "jq.onload=function(){",
+            // load actual bookmarklet after jquery is injected
+            "var js = document.createElement('script');",
+            "js.setAttribute('src', window.PUTON_HOST + 'js/bookmarklet.js');",
+            "document.body.appendChild(js);",
+        "};",
+    "})()"
+    ].join('');
+}
 
 // (taken from serve)
 server.use(function(req, res, next) {

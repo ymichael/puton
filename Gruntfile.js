@@ -10,17 +10,15 @@ module.exports = function(grunt) {
         concat: {
             dist: {
                 src: [
-                    // templates
-                    'public/js/templates/templates.js',
-
-                    // libs
-                    'public/js/libs/backbone.js',
                     'public/js/libs/jquery.js',
-                    'public/js/libs/codemirror.js',
-                    'public/js/libs/underscore.js',
-                    'public/js/libs/pouch.js',
-                    'public/js/libs/codemirror.js.js',
                     'public/js/libs/jquery.tree.js',
+                    'public/js/libs/underscore.js',
+                    'public/js/libs/codemirror.js',
+                    'public/js/libs/backbone.js',
+                    'public/js/libs/pouch.js',
+
+                    // templates
+                    'public/js/templates/template.js',
 
                     // scripts
                     'public/js/scripts/app.js',
