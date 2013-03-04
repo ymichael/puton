@@ -1,32 +1,28 @@
 module.exports = function(grunt) {
-
-
     grunt.initConfig({
-
         clean: ['dist/'],
-
         jshint: {
           files: [
             "public/js/scripts/*.js"
           ]
         },
-
         pkg: grunt.file.readJSON('package.json'),
-
         concat: {
             dist: {
                 src: [
+                    // templates
                     'public/js/templates/templates.js',
 
+                    // libs
                     'public/js/libs/backbone.js',
                     'public/js/libs/jquery.js',
                     'public/js/libs/codemirror.js',
                     'public/js/libs/underscore.js',
                     'public/js/libs/pouch.js',
-
                     'public/js/libs/codemirror.js.js',
                     'public/js/libs/jquery.tree.js',
 
+                    // scripts
                     'public/js/scripts/app.js',
                     'public/js/scripts/start.js'
                 ],
@@ -42,7 +38,6 @@ module.exports = function(grunt) {
                 }
             }
         },
-
         cssmin: {
             compress: {
                 files: {
@@ -55,7 +50,6 @@ module.exports = function(grunt) {
                 }
             }
         }
-
     });
 
     grunt.loadNpmTasks('grunt-contrib-concat');
@@ -67,10 +61,7 @@ module.exports = function(grunt) {
     grunt.registerTask('test', ['clean','jshint']);
     grunt.registerTask('build', 'concat:dist');
     grunt.registerTask("minify", ['uglify','cssmin']);
-
     grunt.registerTask("debug", ['test','build']);
     grunt.registerTask("release", ['debug', 'minify']);
     grunt.registerTask("default", "release");
-
-
 };
