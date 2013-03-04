@@ -8,6 +8,7 @@
   },
   "subdomain": "puton",
   "scripts": {
+    "preinstall": "grunt --force",
     "start": "puton.js"
   },
   "engines": {
