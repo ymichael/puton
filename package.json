@@ -1,10 +1,10 @@
 {
   "name": "puton",
-  "version": "0.0.1-15",
+  "version": "0.0.1-18",
   "dependencies": {
-    "connect": "*",
+    "express": "*",
     "jade": "*",
-    "markdown": "*"
+    "less-middleware": "*"
   },
   "subdomain": "puton",
   "scripts": {
