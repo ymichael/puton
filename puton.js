@@ -1,19 +1,40 @@
 #!/usr/bin/env node
 
 // Module Dep
-var connect = require('connect');
-var jade = require('jade');
-var fs = require('fs');
+var express = require('express');
+var http = require('http');
 var production = process.env.NODE_ENV === "production";
+var app = express();
 
 // Server
-var server = connect();
-server.use(connect.logger("dev"));
+app.configure(function() {
+    app.set('views', __dirname + '/views');
+    app.set('view engine', 'jade');
+    app.use(express.bodyParser());
+    app.use(express.methodOverride());
+    app.use(app.router);
+});
+    
+// Production 
+app.configure('production', function(){
+    app.use(express.errorHandler());
+    app.use(express.compress());
+    app.use(express["static"](__dirname + "/dist"));
+});
 
-// Production
+// Development
+app.configure('development', function(){
+    app.use(require('less-middleware')({
+        src: __dirname + '/public',
+        force: true
+    }));
+    app.use(express["static"](__dirname + "/public"));
+    app.use(express.errorHandler({dumpExceptions: true, showStack: true}));
+    app.use(express.logger('dev'));
+});
+
 var bookmarklet;
 if (production) {
-    server.use(connect["static"](__dirname + "/dist"));
     // Main Page
     bookmarklet = [
     "javascript:(function() {",
@@ -32,7 +53,6 @@ if (production) {
     "})()"
     ].join('');
 } else {
-    server.use(connect["static"](__dirname + "/public"));
     bookmarklet = [
     "javascript:(function() {",
         "window.PUTON_HOST = window.PUTON_HOST || 'http://puton.jit.su/';",
@@ -50,36 +70,16 @@ if (production) {
     ].join('');
 }
 
-// (taken from serve)
-server.use(function(req, res, next) {
-    if (req.url !== "/") {
-        return next();
-    }
-    var file = __dirname + "/index.jade";
-    fs.readFile(file, "utf8", function(err, str) {
-        if (err) {
-            return next(err);
-        }
-        try {
-            var fn = jade.compile(str, {
-                filename: file,
-                pretty: true
-            });
-
-            str = fn({
-                bookmarklet: bookmarklet
-            });
-            res.setHeader("Content-Type", "text/html");
-            res.setHeader("Content-Length", Buffer.byteLength(str));
-            res.end(str);
-        } catch (err) {
-            next(err);
-        }
-    });
+// Routes
+app.get('/', function(req, res) {
+    var variables = {
+        bookmarklet: bookmarklet
+    };
+    res.render('index', variables);
 });
 
 // Start Server
 var port = process.env.PORT || 3000;
-server.listen(port, function() {
-    console.log('\033[90mserving \033[36mputon\033[90m on port \033[96m%d\033[0m', port);
+http.createServer(app).listen(port, function() {
+    console.log("Puton started, listening on port %d in %s mode", port, app.settings.env);
 });
