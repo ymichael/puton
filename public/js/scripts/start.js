@@ -14,4 +14,7 @@ var markup = "\
 	$(markup).appendTo($("body"));
 	var x = new App();
 	x.start();
+    if (typeof window.PUTON_LOADED && window.PUTON_LOADED === -1) {
+        window.PUTON_LOADED = 1;
+    }
 });
