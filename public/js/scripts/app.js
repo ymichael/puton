@@ -1,3 +1,4 @@
+/* .jshintrc eval:ignore */
 // stolen from SO.
 function syntaxHighlight(json, nohtml) {
     if (typeof json !== 'string') {
@@ -314,7 +315,7 @@ v.Query = Backbone.View.extend({
                 mode: "text/javascript"
             });
         });
-        self.cm['map'].focus();
+        self.cm.map.focus();
 
 
         this.documentsView =  new v.Documents({
@@ -326,8 +327,8 @@ v.Query = Backbone.View.extend({
     },
     runQuery: function() {
         var self = this;
-        var map = self.cm['map'].getValue().trim();
-        var reduce = self.cm['reduce'].getValue().trim();
+        var map = self.cm.map.getValue().trim();
+        var reduce = self.cm.reduce.getValue().trim();
         var hasReduce;
         var query = {};
 
@@ -403,7 +404,9 @@ v.Document = Backbone.View.extend({
         } else if (this.show === 'edit') {
             var modelJson = model.toJSON();
             ['_rev','_id'].forEach(function(key) {
-                if (key in modelJson) delete modelJson[key];
+                if (key in modelJson) {
+                    delete modelJson[key];
+                }
             });
             this.$el.html(tmpl.doc_edit({
                 code: JSON.stringify(modelJson, undefined, 2)
@@ -430,14 +433,18 @@ v.Document = Backbone.View.extend({
                 throw("Not a valid object");
             }
             
-            json['_id'] = (this.model.toJSON())['_id'];
-            json['_rev'] = (this.model.toJSON())['_rev'];
+            json._id = (this.model.toJSON())._id;
+            json._rev = (this.model.toJSON())._rev;
 
             this.db.put(json, function(err, res) {
-                if (err) return console.error(err);
+                if (err) {
+                    return console.error(err);
+                }
 
-                this.db.get(json['_id'], function(err, res) {
-                    if (err) return console.error(err);
+                this.db.get(json._id, function(err, res) {
+                    if (err) {
+                        return console.error(err);
+                    }
                     
                     self.model.set(res);
                     self.show = "full";
@@ -476,7 +483,9 @@ v.Document = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        if (this.show ===  'edit') return;
+        if (this.show ===  'edit') {
+            return;
+        }
 
         this.show = this.show === "collapsed" ?
             "full" : "collapsed";
