@@ -18,7 +18,7 @@ app.configure(function() {
 app.configure('production', function(){
     app.use(express.errorHandler());
     app.use(express.compress());
-    app.use(express["static"](__dirname + "/dist"));
+    app.use(express["static"](__dirname + "/public"));
 });
 
 // Development
@@ -48,14 +48,14 @@ if (production) {
 
         // puton
         "var puton = document.createElement('script');",
-        "puton.setAttribute('src', PUTON_HOST + 'release/puton.min.js');",
+        "puton.setAttribute('src', PUTON_HOST + 'dist/release/puton.min.js');",
         "document.body.appendChild(puton);",
 
         // css
         "var css = document.createElement('link');",
         "css.setAttribute('rel', 'stylesheet');",
         "css.setAttribute('type', 'text/css');",
-        "css.setAttribute('href', PUTON_HOST + 'release/puton.css');",
+        "css.setAttribute('href', PUTON_HOST + 'dist/release/puton.css');",
         "document.body.appendChild(css);",
     "})()"
     ].join('');
