@@ -1,6 +1,6 @@
 {
   "name": "puton",
-  "version": "0.0.1-22",
+  "version": "0.0.1-27",
   "dependencies": {
     "express": "*",
     "jade": "*",
