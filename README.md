@@ -14,6 +14,9 @@ To get started, run the following commands:
 # install npm dependencies
 $ npm install
 
+# run grunt build
+$ grunt release
+
 # starts a server at localhost:8080 to serve puton
 $ make server
 ```
