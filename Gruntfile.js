@@ -1,6 +1,6 @@
 module.exports = function(grunt) {
     grunt.initConfig({
-        clean: ['dist/'],
+        clean: ['public/dist/'],
         jshint: {
             options: {
                 jshintrc: '.jshintrc'
@@ -27,14 +27,14 @@ module.exports = function(grunt) {
                     'public/js/scripts/app.js',
                     'public/js/scripts/start.js'
                 ],
-                dest: 'dist/debug/puton.js'
+                dest: 'public/dist/debug/puton.js'
             }
         },
         uglify: {
             release: {
                 files: {
-                    "dist/release/puton.min.js": [
-                        "dist/debug/puton.js"
+                    "public/dist/release/puton.min.js": [
+                        "public/dist/debug/puton.js"
                     ]
                 }
             }
@@ -42,9 +42,9 @@ module.exports = function(grunt) {
         cssmin: {
             compress: {
                 files: {
-                    "dist/release/puton.css": [
+                    "public/dist/release/puton.css": [
                         "public/css/codemirror.css",
-                        "dist/debug/style.css"
+                        "public/dist/debug/style.css"
                     ]
                 }
             }
@@ -53,7 +53,7 @@ module.exports = function(grunt) {
         less: {
             release: {
                 files: {
-                    'dist/debug/style.css': 'public/css/style.less'
+                    'public/dist/debug/style.css': 'public/css/style.less'
                 }
             }
         }
