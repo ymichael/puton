@@ -11,14 +11,17 @@ There are several constraints in this regards _(same origin policy being one of 
 To get started, run the following commands:
 
 ```sh
+# install grunt-cli
+$ npm install -g grunt-cli
+
 # install npm dependencies
 $ npm install
 
 # run grunt build
 $ grunt release
 
-# starts a server at localhost:8080 to serve puton
-$ make server
+# starts puton
+$ node puton.js
 ```
 
 [1]: http://pouchdb.com/

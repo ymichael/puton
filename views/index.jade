@@ -2,13 +2,69 @@
 html
     head
         title Puton: Futon for PouchDB
-        link(rel='stylesheet', type='type/css', href='/css/style.css')
-        link(rel='stylesheet', type='type/css', href='/css/codemirror.css')
-
+        meta(name="viewport", content="width=device-width, initial-scale=1, user-scalable=no")
+        link(rel='stylesheet', type='type/css', href='/css/minimal.css')
     body
-        a(href='#{ bookmarklet }') Puton
         script
             // For development.
             window.PUTON_HOST = "/"
 
-        h1 Puton: Futon for PouchDB
+        .wrapper
+            header
+                h1 Puton
+                p Futon for <a href="http://pouchdb.com">PouchDB</a>
+                p.view
+                    a(href='http://github.com/ymichael/puton') View the project on Github
+
+                a(href="#{bookmarklet}") 
+                    #bookmarklet Puton <strong>save as bookmarklet</strong>
+
+            section
+                h2 What is Puton?
+                p.
+                    Puton is a bookmarklet for inspecting PouchDB databases within the browser.
+                    <br/>
+                    We use a bookmarklet to circumvent same-origin policy of browsers.
+
+                h2 Getting Started With Puton
+                ol
+                    li Save the link on the left as a bookmarklet
+                    li Open the bookmark on the page <small>(domain)</small> using PouchDB
+
+                h2 Contributing to Puton
+                h3 Getting Started
+                :markdown
+                    - install grunt-cli
+                    ```
+                    $ npm install -g grunt-cli
+                    ```
+
+                    - install npm dependencies
+                    ```
+                    $ npm install
+                    ```
+                    
+                    -  run grunt build
+                    ```
+                    $ grunt release
+                    ```
+
+                    - starts puton
+                    ```
+                    $ NODE_ENV=production node puton.js
+                    ```
+
+                    - starts puton in production mode
+                    $ node puton.js
+                    ```
+
+            footer
+                p.
+                    This project is maintained by
+                    <br/>
+                    <a target="_blank" href="https://github.com/ymichael">ymichael</a>
+                    &amp;
+                    <a target="_blank" href="https://github.com/zichun">zichun</a>
+                p
+                    small Hosted on <a target="_blank" href="http://nodejitsu.com">Nodejitsu</a>
+            

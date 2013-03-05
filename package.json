@@ -4,7 +4,8 @@
   "dependencies": {
     "express": "*",
     "jade": "*",
-    "less-middleware": "*"
+    "less-middleware": "*",
+    "marked": "*"
   },
   "subdomain": "puton",
   "scripts": {
