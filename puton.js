@@ -38,7 +38,11 @@ if (production) {
     // Main Page
     bookmarklet = [
     "javascript:(function() {",
-        "if (window.PUTON_LOADED) {alert('Puton is already loaded'); return;} ",
+        "if (window.PUTON_LOADED === -1) {",
+            "alert('Puton is already loaded'); return;",
+        "} else if (window.PUTON_LOADED === 1) {",
+            "$('#puton-container').show(); return;",
+        "}",
         "window.PUTON_HOST = window.PUTON_HOST || 'http://puton.jit.su/';",
         "window.PUTON_LOADED=-1;", // set PUTON_LOADED to loading mode
 
@@ -58,7 +62,11 @@ if (production) {
 } else {
     bookmarklet = [
     "javascript:(function() {",
-        "if (window.PUTON_LOADED) {alert('Puton is already loaded'); return;} ",
+        "if (window.PUTON_LOADED === -1) {",
+            "alert('Puton is already loaded'); return;",
+        "} else if (window.PUTON_LOADED === 1) {",
+            "$('#puton-container').show(); return;",
+        "}",
         "window.PUTON_HOST = window.PUTON_HOST || 'http://puton.jit.su/';",
         "window.PUTON_LOADED=-1;", // set PUTON_LOADED to loading mode
 
