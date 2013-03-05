@@ -57,9 +57,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-cssmin');
 
     grunt.registerTask('test', ['clean','jshint']);
-    grunt.registerTask('build', 'concat:dist');
+    grunt.registerTask('build', ['concat:dist']);
     grunt.registerTask("minify", ['uglify','cssmin']);
     grunt.registerTask("debug", ['test','build']);
     grunt.registerTask("release", ['debug', 'minify']);
-    grunt.registerTask("default", "release");
+    grunt.registerTask("default", ["release"]);
 };
