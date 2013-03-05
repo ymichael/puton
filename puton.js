@@ -3,7 +3,6 @@
 // Module Dep
 var express = require('express');
 var http = require('http');
-var production = process.env.NODE_ENV === "production";
 var app = express();
 
 // Server
@@ -34,6 +33,7 @@ app.configure('development', function(){
 });
 
 var bookmarklet;
+var production = process.env.NODE_ENV === "production";
 if (production) {
     // Main Page
     bookmarklet = [
