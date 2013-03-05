@@ -31,6 +31,9 @@ module.exports = function(grunt) {
             }
         },
         uglify: {
+            options: {
+                compress: false
+            },
             release: {
                 files: {
                     "dist/release/puton.min.js": [
