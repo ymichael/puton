@@ -40,11 +40,17 @@ module.exports = function(grunt) {
             compress: {
                 files: {
                     "dist/release/puton.css": [
-                        "public/css/*.css"
-                    ],
-                    "dist/debug/puton.css": [
-                        "public/css/*.css"
+                        "public/css/codemirror.css",
+                        "dist/debug/style.css"
                     ]
+                }
+            }
+        },
+
+        less: {
+            release: {
+                files: {
+                    'dist/debug/style.css': 'public/css/style.less'
                 }
             }
         }
@@ -55,9 +61,11 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-cssmin');
+    grunt.loadNpmTasks('grunt-contrib-less');
 
+  
     grunt.registerTask('test', ['clean','jshint']);
-    grunt.registerTask('build', 'concat:dist');
+    grunt.registerTask('build', ['concat:dist', 'less:release']);
     grunt.registerTask("minify", ['uglify','cssmin']);
     grunt.registerTask("debug", ['test','build']);
     grunt.registerTask("release", ['debug', 'minify']);
