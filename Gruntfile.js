@@ -2,9 +2,12 @@ module.exports = function(grunt) {
     grunt.initConfig({
         clean: ['dist/'],
         jshint: {
-          files: [
-            "public/js/scripts/*.js"
-          ]
+            options: {
+                jshintrc: '.jshintrc'
+            },
+            files: [
+                "public/js/scripts/*.js"
+            ]
         },
         pkg: grunt.file.readJSON('package.json'),
         concat: {

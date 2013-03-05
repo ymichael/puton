@@ -1,0 +1,11 @@
+{
+  "curly": true,
+  "eqnull": true,
+  "eqeqeq": true,
+
+  "evil": true,
+
+  "globals": {
+    "jQuery": true
+  }
+}
