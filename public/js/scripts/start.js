@@ -22,4 +22,8 @@ var markup =
         $("#puton-container").hide();
         return false;
     });
+
+    if (typeof window.PUTON_LOADED && window.PUTON_LOADED === -1) {
+        window.PUTON_LOADED = 1;
+    }
 });
