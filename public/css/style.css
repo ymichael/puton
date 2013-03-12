@@ -13,6 +13,7 @@
 }
 #puton-container h1 {
   font-weight: 100;
+  color: black;
 }
 #puton-container .doc {
   border: solid 1px #eee;
