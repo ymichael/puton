@@ -24,6 +24,7 @@ module.exports = function(grunt) {
                     'public/js/templates/template.js',
 
                     // scripts
+                    'public/js/scripts/utils.js',
                     'public/js/scripts/app.js',
                     'public/js/scripts/start.js'
                 ],

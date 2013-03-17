@@ -6,6 +6,7 @@
   "evil": true,
 
   "globals": {
-    "jQuery": true
+    "jQuery": true,
+    "Puton": false
   }
 }

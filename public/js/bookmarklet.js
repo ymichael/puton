@@ -12,6 +12,7 @@ $(function() {
    
     //
     // load scripts.
+    //
     var scriptTag = function(src) {
         var js = document.createElement('script');
         js.src = PUTON_HOST + src;
@@ -26,6 +27,7 @@ $(function() {
         "js/libs/pouch.js",
         "js/libs/sandbox.js",
         "js/templates/template.js",
+        "js/scripts/utils.js",
         "js/scripts/app.js",
         "js/scripts/start.js"
     ];
