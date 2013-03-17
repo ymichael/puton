@@ -20,4 +20,3 @@ function syntaxHighlight(json, nohtml) {
         return '<span class="' + cls + '">' + match + '</span>';
     });
 }
-
