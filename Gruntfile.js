@@ -89,6 +89,9 @@ module.exports = function(grunt) {
             },
             production: {
                 cmd: 'NODE_ENV=production node puton.js'
+            },
+            updatePouch: {
+                cmd: 'curl -o public/js/libs/pouch.js http://download.pouchdb.com/pouchdb-nightly.js'
             }
         }
     });
@@ -109,5 +112,5 @@ module.exports = function(grunt) {
     grunt.registerTask("minify", ['uglify','cssmin']);
     grunt.registerTask("debug", ['test','build']);
     grunt.registerTask("release", ['debug', 'minify']);
-    grunt.registerTask("default", ['release', 'exec']);
+    grunt.registerTask("default", ['release', 'exec:default']);
 };
