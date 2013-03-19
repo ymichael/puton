@@ -56,7 +56,15 @@
 #puton-container .boolean {
   color: blue;
 }
-#puton-container #puton-main {
+#puton-container .docs {
+  position: relative;
+}
+#puton-container .docs #puton-revs-container {
+  position: absolute;
+  left: 530px;
+  top: 0px;
+}
+#puton-container .docs .docs-container {
   width: 500px;
 }
 #puton-container #puton-toolbar {

@@ -27,6 +27,8 @@ tmpl.log = "\
 
 tmpl.doc_full = "\
 <div class='optionsbar'>\
+    <a class='option revoption'>revs</a>\
+    &nbsp;|&nbsp;\
     <a class='option editoption'>edit</a>\
     &nbsp;|&nbsp;\
     <a class='option deleteoption'>delete</a>\
@@ -84,6 +86,16 @@ tmpl.toolbar = "\
 	<a class='button' id='query'>Run Query</a>\
     <a class='button' id='adddoc'>Add document</a>\
     <div id='puton-tabbuttons'></div>\
+";
+
+tmpl.documents = "\
+    <div class='docs-container'></div>\
+    <div id='puton-revs-container'></div>\
+";
+tmpl.revisions = "<div class='revisions'></div>";
+tmpl.rev_full = "\
+    <h3 class='key'><%- key %></h3>\
+    <pre class='value'><%= value %></pre>\
 ";
 
 tmpl.tabbutton = "<a class='tabbutton><%- label %></a>";

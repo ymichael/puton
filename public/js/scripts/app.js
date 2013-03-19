@@ -310,6 +310,7 @@ window.Puton = (function() {
             this.listenTo(this.collection, "remove", this.render);
         },
         render: function() {
+
             var fragment = document.createDocumentFragment();
             this.collection.each(function(doc){
                 var docview = new v.Document({
@@ -318,7 +319,81 @@ window.Puton = (function() {
                 });
                 fragment.appendChild(docview.render().el);
             });
-            this.$el.html(fragment);
+            this.$el.html(tmpl.documents);
+            this.$el.find('.docs-container').html(fragment);
+        }
+    });
+
+    v.Revisions = Backbone.View.extend({
+        className: 'revs',
+        initialize: function(opts) {
+            this.db = opts.db;
+            this.doc_id = opts.doc_id;
+        },
+        render: function() {
+            var $el = this.$el;
+            var doc_id = this.doc_id;
+
+            this.db.get(doc_id, {
+                revs: true,
+                revs_info: true
+            }, function(err, doc) {
+                if (err) {
+                    return console.error(err);
+                }
+
+                var $fragment = $(tmpl.revisions({}));
+                
+                doc._revs_info.forEach(function(rev) {
+                    var revisionView = new v.Revision({
+                        db: this.db
+                    });
+                    var $tmp = $('<div/>');
+                    $fragment.append($tmp);
+
+                    if (rev.status === 'available') {
+                        this.db.get(doc_id, {rev: rev.rev}, function(err, doc) {
+                            if (err) {
+                                return console.error(err);
+                            }
+                            $tmp.html( 
+                                revisionView.render(doc, doc_id).el );
+                            reRender();
+                        });
+                    } else {
+                        $tmp.html( 
+                            revisionView.render(false, doc_id).el );
+                    }
+
+                });
+
+                function reRender() {
+                    $el.html($fragment);
+                }
+                reRender();
+
+            });
+        }
+    });
+
+    v.Revision = Backbone.View.extend({
+        className: 'rev',
+        render: function(doc, doc_id) {
+            var model = doc;
+
+            if (model) {
+                this.$el.html(tmpl.rev_full({
+                    key: model._rev,
+                    value: syntaxHighlight(model)
+                }));
+            } else {
+                this.$el.html(tmpl.rev_full({
+                    key: doc_id,
+                    value: 'compacted'
+                }));
+            }
+
+            return this;
         }
     });
 
@@ -401,6 +476,7 @@ window.Puton = (function() {
             }
         },
         events: {
+            "click .revoption": "revOption",
             "click .editoption": "editOption",
             "click .deleteoption": "deleteOption",
             "click": "toggleView",
@@ -421,6 +497,17 @@ window.Puton = (function() {
                 // this.model.id
                 this.$el.trigger("deleteDocument", this.model.id);
             }
+        },
+        revOption: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var revisions = new v.Revisions({
+                el: $("#puton-revs-container"),
+                db: this.db,
+                doc_id: (this.model.toJSON())._id
+            });
+            revisions.render();
         },
         toggleView: function(e) {
             e.preventDefault();
