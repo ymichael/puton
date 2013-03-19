@@ -9,6 +9,60 @@ window.Puton = (function() {
     };
 
     //
+    // Main Application
+    //
+    Puton.app = Backbone.View.extend({
+        id: "puton-container",
+        tagName: "div",
+        initialize: function() {
+        },
+        start: function() {
+            this.render();
+            this.logview = new v.Log();
+            this.currentView = new v.Main({
+                el: this.$("#puton-main")
+            }).render();
+        },
+        render: function() {
+            this.$el.html(tmpl.app());
+            return this;
+        },
+        events: {
+            "changeView": "changeView",
+            "selectDB": "selectDB",
+            "click #hide-button": "hide"
+        },
+        hide: function(e) {
+            this.$el.hide();
+        },
+        selectDB: function(e, dbname) {
+            var that = this;
+            Pouch(dbname, function(err, db) {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+
+                // tmp.
+                window.db = db;
+
+                var database = new m.DB(null, {db: db});
+
+                that.changeView(null, database);
+            });
+        },
+        changeView: function(e, model) {
+            // TODO.
+            // garbage collection
+            this.currentView = new v.DB({
+                el: this.$("#puton-main"),
+                model: model
+            });
+            this.currentView.render();
+        }
+    });
+
+    //
     // Views
     //
     var v = {};
@@ -581,60 +635,6 @@ window.Puton = (function() {
     });
 
     Puton.models = m;
-
-    //
-    // Main Application
-    //
-    Puton.app = Backbone.View.extend({
-        id: "puton-container",
-        tagName: "div",
-        initialize: function() {
-        },
-        start: function() {
-            this.render();
-            this.logview = new v.Log();
-            this.currentView = new v.Main({
-                el: this.$("#puton-main")
-            }).render();
-        },
-        render: function() {
-            this.$el.html(tmpl.app());
-            return this;
-        },
-        events: {
-            "changeView": "changeView",
-            "selectDB": "selectDB",
-            "click #hide-button": "hide"
-        },
-        hide: function(e) {
-            this.$el.hide();
-        },
-        selectDB: function(e, dbname) {
-            var that = this;
-            Pouch(dbname, function(err, db) {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-
-                // tmp.
-                window.db = db;
-
-                var database = new m.DB(null, {db: db});
-
-                that.changeView(null, database);
-            });
-        },
-        changeView: function(e, model) {
-            // TODO.
-            // garbage collection
-            this.currentView = new v.DB({
-                el: this.$("#puton-main"),
-                model: model
-            });
-            this.currentView.render();
-        }
-    });
 
     return Puton;
 })();
