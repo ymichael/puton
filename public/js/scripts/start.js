@@ -20,13 +20,6 @@ $(function() {
     //
     var x = new Puton();
 
-    // TODO.
-    // this should go in `Puton.app`
-    $('#hide-button').click(function(e) {
-        $("#puton-container").hide();
-        return false;
-    });
-
     if (typeof window.PUTON_LOADED && window.PUTON_LOADED === -1) {
         window.PUTON_LOADED = 1;
     }
