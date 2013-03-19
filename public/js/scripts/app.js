@@ -19,9 +19,7 @@ window.Puton = (function() {
         start: function() {
             this.render();
             this.logview = new v.Log();
-            this.currentView = new v.Main({
-                el: this.$("#puton-main")
-            }).render();
+            this.mainPage();
         },
         render: function() {
             this.$el.html(tmpl.app());
@@ -30,7 +28,13 @@ window.Puton = (function() {
         events: {
             "changeView": "changeView",
             "selectDB": "selectDB",
+            "click h1": "mainPage",
             "click #hide-button": "hide"
+        },
+        mainPage: function(e) {
+            this.currentView = new v.Main({
+                el: this.$("#puton-main")
+            }).render();
         },
         hide: function(e) {
             this.$el.hide();

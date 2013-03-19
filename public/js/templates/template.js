@@ -1,3 +1,5 @@
+/*jshint multistr:true*/
+
 // ## Templates
 var tmpl = {};
 
@@ -6,24 +8,21 @@ tmpl.app = "\
 <div id='puton-main'>\
 </div>\
 <a href='#' id='hide-button'>Close</a>\
-<div id='log'></div>\
-";
+<div id='log'></div>";
 
 tmpl.mainView = "\
 <b><label for='db'>db name: </label></b>\
-<input type='text' id='db'/>\
-";
+<input type='text' id='db'/>";
 
 tmpl.log = "\
-    <p class='log log-<%- type %>'>\
-    	<b>\
-    		<small class='count'>\
-    			<%- count %>\
-    		</small>\
-    	</b>\
-    	<%- log %>\
-    </p>\
-";
+<p class='log log-<%- type %>'>\
+    <b>\
+        <small class='count'>\
+            <%- count %>\
+        </small>\
+    </b>\
+    <%- log %>\
+</p>";
 
 
 tmpl.doc_full = "\
@@ -35,23 +34,19 @@ tmpl.doc_full = "\
     <a class='option deleteoption'>delete</a>\
 </div>\
 <h3 class='key'><%- key %></h3>\
-<pre class='value'><%= value %></pre>\
-";
+<pre class='value'><%= value %></pre>";
 
 tmpl.doc_collapsed = "\
-    <span class='key'><%- key %></span>\
-    &nbsp;\
-    <span class='value'><%- trunc %></span>\
-";
+<span class='key'><%- key %></span>\
+&nbsp;\
+<span class='value'><%- trunc %></span>";
 
 tmpl.doc_edit = "\
-    <textarea class='code-edit' name='code'><%= code %></textarea>\
-    <button class='code-edit-save'>Save</button>\
-";
+<textarea class='code-edit' name='code'><%= code %></textarea>\
+<button class='code-edit-save'>Save</button>";
 
 tmpl.tabs = "\
-    <div class='docs'></div>\
-";
+<div class='docs'></div>";
 
 tmpl.queryInput = "\
     Map: \
@@ -84,7 +79,7 @@ tmpl.db = "\
 ";
 
 tmpl.toolbar = "\
-	<a class='button' id='query'>Run Query</a>\
+    <a class='button' id='query'>Run Query</a>\
     <a class='button' id='adddoc'>Add document</a>\
     <div id='puton-tabbuttons'></div>\
 ";
