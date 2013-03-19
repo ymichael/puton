@@ -495,14 +495,20 @@ window.Puton = (function() {
     // Main Application
     //
     Puton.app = Backbone.View.extend({
-        el: "#puton-container",
+        id: "puton-container",
+        tagName: "div",
         initialize: function() {
         },
         start: function() {
+            this.render();
             this.logview = new v.Log();
             this.currentView = new v.Main({
                 el: this.$("#puton-main")
             });
+        },
+        render: function() {
+            this.$el.html(tmpl.app());
+            return this;
         },
         events: {
             "changeView": "changeView",
