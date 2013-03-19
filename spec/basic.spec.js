@@ -14,3 +14,22 @@ describe("General Application Functionality", function() {
         expect(puton._app.$el.css('display')).toBe("none");
 	});
 });
+
+describe("Main Application View", function() {
+    var mainView;
+    beforeEach(function() {
+        mainView = new Puton.views.Main();
+    });
+
+    it("should display a list of existing databases", function() {
+
+    });
+
+    it("should trigger a selectDB event when a database is selected", function() {
+
+    });
+
+    it("should trigger a selectDB event when a database is clicked", function() {
+
+    });
+});
