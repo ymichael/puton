@@ -82,6 +82,14 @@ module.exports = function(grunt) {
                     }
                 }
             }
+        },
+        exec: {
+            default: {
+                cmd: 'node puton.js'
+            },
+            production: {
+                cmd: 'NODE_ENV=production node puton.js'
+            }
         }
     });
 
@@ -93,6 +101,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-less');
     grunt.loadNpmTasks('grunt-contrib-connect');
     grunt.loadNpmTasks('grunt-contrib-jasmine');
+    grunt.loadNpmTasks('grunt-exec');
 
     grunt.registerTask('lint', ['clean','jshint']);
     grunt.registerTask('test', ['connect']);
@@ -100,5 +109,5 @@ module.exports = function(grunt) {
     grunt.registerTask("minify", ['uglify','cssmin']);
     grunt.registerTask("debug", ['test','build']);
     grunt.registerTask("release", ['debug', 'minify']);
-    grunt.registerTask("default", "release");
+    grunt.registerTask("default", ['release', 'exec']);
 };
