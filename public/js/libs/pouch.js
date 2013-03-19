@@ -196,7 +196,7 @@ var Crypto = {};
       return WordToHexValue;
     };
 
-    //**    function Utf8Encode(string) removed. Aready defined in pidcrypt_utils.js
+    //**	function Utf8Encode(string) removed. Aready defined in pidcrypt_utils.js
 
     var x=Array();
     var k,AA,BB,CC,DD,a,b,c,d;
@@ -205,7 +205,7 @@ var Crypto = {};
     var S31=4, S32=11, S33=16, S34=23;
     var S41=6, S42=10, S43=15, S44=21;
 
-    //  string = Utf8Encode(string); #function call removed
+    //	string = Utf8Encode(string); #function call removed
 
     x = ConvertToWordArray(string);
 
@@ -702,8 +702,7 @@ var Pouch = function Pouch(name, opts, callback) {
     throw 'Invalid Adapter';
   }
 
-  var that = this;
-  var cb = function(err) {
+  var adapter = new PouchAdapter(opts, function(err, db) {
     if (err) {
       if (callback) {
         callback(err);
@@ -711,39 +710,36 @@ var Pouch = function Pouch(name, opts, callback) {
       return;
     }
 
-    var adapter = new PouchAdapter(opts, function(err, db) {
-      if (err) {
-        if (callback) {
-          callback(err);
-        }
-        return;
-      }
-
-      for (var plugin in Pouch.plugins) {
-        // In future these will likely need to be async to allow the plugin
-        // to initialise
-        var pluginObj = Pouch.plugins[plugin](db);
-        for (var api in pluginObj) {
-          // We let things like the http adapter use its own implementation
-          // as it shares a lot of code
-          if (!(api in db)) {
-            db[api] = pluginObj[api];
-          }
+    for (var plugin in Pouch.plugins) {
+      // In future these will likely need to be async to allow the plugin
+      // to initialise
+      var pluginObj = Pouch.plugins[plugin](db);
+      for (var api in pluginObj) {
+        // We let things like the http adapter use its own implementation
+        // as it shares a lot of code
+        if (!(api in db)) {
+          db[api] = pluginObj[api];
         }
       }
-      callback(null, db);
-    });
-    for (var j in adapter) {
-      that[j] = adapter[j];
     }
-  };
-
-  // Don't call Pouch.open for ALL_DBS
-  // Pouch.open saves the db's name into ALL_DBS
-  if (name === Pouch.allDBName(opts.adapter)) {
-    cb();
-  } else {
-    Pouch.open(opts.adapter, opts.name, cb);
+    db.taskqueue.ready(true);
+    db.taskqueue.execute(db);
+    callback(null, db);
+  });
+  for (var j in adapter) {
+    this[j] = adapter[j];
+  }
+  for (var plugin in Pouch.plugins) {
+    // In future these will likely need to be async to allow the plugin
+    // to initialise
+    var pluginObj = Pouch.plugins[plugin](this);
+    for (var api in pluginObj) {
+      // We let things like the http adapter use its own implementation
+      // as it shares a lot of code
+      if (!(api in this)) {
+        this[api] = pluginObj[api];
+      }
+    }
   }
 };
 
@@ -1962,8 +1958,8 @@ var Changes = function() {
 
   api.notify = function(db_name) {
     if (!listeners[db_name]) { return; }
-    for (var i in listeners[db_name]) {
-      /*jshint loopfunc: true */
+    
+    Object.keys(listeners[db_name]).forEach(function (i) {
       var opts = listeners[db_name][i].opts;
       listeners[db_name][i].db.changes({
         include_docs: opts.include_docs,
@@ -1979,7 +1975,7 @@ var Changes = function() {
           }
         }
       });
-    }
+    });
   };
 
   return api;
@@ -1997,6 +1993,7 @@ var PouchAdapter = function(opts, callback) {
 
 
   var api = {};
+
   var customApi = Pouch.adapters[opts.adapter](opts, function(err, db) {
     if (err) {
       if (callback) {
@@ -2010,7 +2007,14 @@ var PouchAdapter = function(opts, callback) {
         db[j] = api[j];
       }
     }
-    callback(err, db);
+
+    // Don't call Pouch.open for ALL_DBS
+    // Pouch.open saves the db's name into ALL_DBS
+    if (opts.name === Pouch.ALL_DBS) {
+      callback(err, db);
+    } else {
+      Pouch.open(opts.adapter, opts.name, function(err) { callback(err, db); });
+    }
   });
 
 
@@ -2147,6 +2151,10 @@ var PouchAdapter = function(opts, callback) {
 
   /* Begin api wrappers. Specific functionality to storage belongs in the _[method] */
   api.get = function (id, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('get', arguments);
+      return;
+    }
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
@@ -2173,6 +2181,10 @@ var PouchAdapter = function(opts, callback) {
   };
 
   api.allDocs = function(opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('allDocs', arguments);
+      return;
+    }
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
@@ -2196,26 +2208,42 @@ var PouchAdapter = function(opts, callback) {
   };
 
   api.changes = function(opts) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('changes', arguments);
+      return;
+    }
     return customApi._changes(opts);
   };
 
   api.close = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('close', arguments);
+      return;
+    }
     return customApi._close(callback);
   };
 
   api.info = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('info', arguments);
+      return;
+    }
     return customApi._info(callback);
   };
-  
+
   api.id = function() {
     return customApi._id();
   };
-  
+
   api.type = function() {
     return (typeof customApi._type === 'function') ? customApi._type() : opts.adapter;
   };
 
   api.bulkDocs = function(req, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('bulkDocs', arguments);
+      return;
+    }
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
@@ -2240,6 +2268,31 @@ var PouchAdapter = function(opts, callback) {
   };
 
   /* End Wrappers */
+  var taskqueue = {};
+
+  taskqueue.ready = false;
+  taskqueue.queue = [];
+
+  api.taskqueue = {};
+
+  api.taskqueue.execute = function (db) {
+    if (taskqueue.ready) {
+      taskqueue.queue.forEach(function(d) {
+        db[d.task].apply(null, d.parameters);
+      });
+    }
+  };
+
+  api.taskqueue.ready = function() {
+    if (arguments.length === 0) {
+      return taskqueue.ready;
+    }
+    taskqueue.ready = arguments[0];
+  };
+
+  api.taskqueue.addTask = function(task, parameters) {
+    taskqueue.queue.push({ task: task, parameters: parameters });
+  };
 
   api.replicate = {};
 
@@ -2264,6 +2317,13 @@ var PouchAdapter = function(opts, callback) {
       customApi[j] = api[j];
     }
   }
+
+  // Http adapter can skip setup so we force the db to be ready and execute any jobs
+  if (opts.skipSetup) {
+    api.taskqueue.ready(true);
+    api.taskqueue.execute(api);
+  }
+
   return customApi;
 };
 
@@ -2471,6 +2531,10 @@ var HttpPouch = function(opts, callback) {
   };
 
   api.request = function(options, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('request', arguments);
+      return;
+    }
     options.auth = host.auth;
     options.url = genDBUrl(host, options.url);
     ajax(options, callback);
@@ -2479,6 +2543,10 @@ var HttpPouch = function(opts, callback) {
   // Sends a POST request to the host calling the couchdb _compact function
   //    version: The version of CouchDB it is running
   api.compact = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('compact', arguments);
+      return;
+    }
     ajax({
       auth: host.auth,
       url: genDBUrl(host, '_compact'),
@@ -2490,6 +2558,10 @@ var HttpPouch = function(opts, callback) {
   //    couchdb: A welcome string
   //    version: The version of CouchDB it is running
   api.info = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('info', arguments);
+      return;
+    }
     ajax({
       auth: host.auth,
       method:'GET',
@@ -2501,6 +2573,10 @@ var HttpPouch = function(opts, callback) {
   // The id could be solely the _id in the database, or it may be a
   // _design/ID or _local/ID path
   api.get = function(id, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('get', arguments);
+      return;
+    }
     // If no options were given, set the callback to the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -2595,6 +2671,10 @@ var HttpPouch = function(opts, callback) {
 
   // Delete the document given by doc from the database given by host.
   api.remove = function(doc, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('remove', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -2611,6 +2691,10 @@ var HttpPouch = function(opts, callback) {
 
   // Remove the attachment given by the id and rev
   api.removeAttachment = function idb_removeAttachment(id, rev, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('removeAttachment', arguments);
+      return;
+    }
     ajax({
       auth: host.auth,
       method: 'DELETE',
@@ -2622,6 +2706,10 @@ var HttpPouch = function(opts, callback) {
   // to the document with the given id, the revision given by rev, and
   // add it to the database given by host.
   api.putAttachment = function(id, rev, blob, type, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('putAttachment', arguments);
+      return;
+    }
     if (typeof type === 'function') {
       callback = type;
       type = blob;
@@ -2637,6 +2725,7 @@ var HttpPouch = function(opts, callback) {
     if (rev) {
       url += '?rev=' + rev;
     }
+
     // Add the attachment
     ajax({
       auth: host.auth,
@@ -2651,6 +2740,10 @@ var HttpPouch = function(opts, callback) {
   // Add the document given by doc (in JSON string format) to the database
   // given by host. This fails if the doc has no _id field.
   api.put = function(doc, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('put', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -2690,6 +2783,10 @@ var HttpPouch = function(opts, callback) {
   // given by host. This does not assume that doc is a new document (i.e. does not
   // have a _id or a _rev field.
   api.post = function(doc, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('post', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -2716,6 +2813,10 @@ var HttpPouch = function(opts, callback) {
   // Update/create multiple documents given by req in the database
   // given by host.
   api.bulkDocs = function(req, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('bulkDocs', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -2747,6 +2848,10 @@ var HttpPouch = function(opts, callback) {
   // by host and ordered by increasing id.
   api.allDocs = function(opts, callback) {
     // If no options were given, set the callback to be the second parameter
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('allDocs', arguments);
+      return;
+    }
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
@@ -2817,6 +2922,10 @@ var HttpPouch = function(opts, callback) {
   // TODO According to the README, there should be two other methods here,
   // api.changes.addListener and api.changes.removeListener.
   api.changes = function(opts) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('changes', arguments);
+      return;
+    }
 
     if (Pouch.DEBUG) {
       console.log(db_url + ': Start Changes Feed: continuous=' + opts.continuous);
@@ -2975,6 +3084,10 @@ var HttpPouch = function(opts, callback) {
   // those that do NOT correspond to revisions stored in the database.
   // See http://wiki.apache.org/couchdb/HttpPostRevsDiff
   api.revsDiff = function(req, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('revsDiff', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -2993,6 +3106,10 @@ var HttpPouch = function(opts, callback) {
   };
 
   api.close = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('close', arguments);
+      return;
+    }
     call(callback, null);
   };
 
@@ -3108,7 +3225,9 @@ var IdbPouch = function(opts, callback) {
   };
 
   req.onsuccess = function(e) {
+
     idb = e.target.result;
+
     var txn = idb.transaction([META_STORE, DETECT_BLOB_SUPPORT_STORE], IDBTransaction.READ_WRITE);
 
     idb.onversionchange = function() {
@@ -3751,6 +3870,7 @@ var IdbPouch = function(opts, callback) {
     if (!opts.since) opts.since = 0;
 
     if (opts.continuous) {
+      var id = name + ':' + Math.uuid();
       opts.cancelled = false;
       IdbPouch.Changes.addListener(name, id, api, opts);
       IdbPouch.Changes.notify(name);
@@ -3770,7 +3890,6 @@ var IdbPouch = function(opts, callback) {
     opts.since = opts.since && !descending ? opts.since : 0;
 
     var results = [], resultIndices = {}, dedupResults = [];
-    var id = name + ':' + Math.uuid();
     var txn;
 
     if (opts.filter && typeof opts.filter === 'string') {
@@ -4852,11 +4971,18 @@ var MapReduce = function(db) {
     }
 
     if (db.type() === 'http') {
-      return httpQuery(fun, opts, callback);
+	  if (typeof fun === 'function'){
+	    return httpQuery({map: fun}, opts, callback);
+	  }
+	  return httpQuery(fun, opts, callback);
     }
 
     if (typeof fun === 'object') {
       return viewQuery(fun, opts);
+    }
+
+    if (typeof fun === 'function') {
+      return viewQuery({map: fun}, opts);
     }
 
     var parts = fun.split('/');

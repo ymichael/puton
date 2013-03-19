@@ -4,14 +4,15 @@ var tmpl = {};
 tmpl.app = "\
 <h1>Puton</h1>\
 <div id='puton-main'>\
-    <b><label for='db'>db name: </label></b>\
-    <input type='text' id='db'/>\
 </div>\
 <a href='#' id='hide-button'>Close</a>\
 <div id='log'></div>\
 ";
 
-
+tmpl.mainView = "\
+<b><label for='db'>db name: </label></b>\
+<input type='text' id='db'/>\
+";
 
 tmpl.log = "\
     <p class='log log-<%- type %>'>\

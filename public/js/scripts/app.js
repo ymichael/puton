@@ -16,6 +16,10 @@ window.Puton = (function() {
         events: {
             "keydown #db": "submit"
         },
+        render: function() {
+            this.$el.html(tmpl.mainView());
+            return this;
+        },
         submit: function(e) {
 
             if (e.keyCode === 13) {
@@ -591,7 +595,7 @@ window.Puton = (function() {
             this.logview = new v.Log();
             this.currentView = new v.Main({
                 el: this.$("#puton-main")
-            });
+            }).render();
         },
         render: function() {
             this.$el.html(tmpl.app());
