@@ -503,13 +503,14 @@ window.Puton = (function() {
             this.currentView = new v.Main({
                 el: this.$("#puton-main")
             });
-
-            // tmp.
-            // this.selectDB(null, "idb://test");
         },
         events: {
             "changeView": "changeView",
-            "selectDB": "selectDB"
+            "selectDB": "selectDB",
+            "click #hide-button": "hide"
+        },
+        hide: function(e) {
+            this.$el.hide();
         },
         selectDB: function(e, dbname) {
             var that = this;
