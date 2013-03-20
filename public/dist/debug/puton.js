@@ -19807,7 +19807,7 @@ var Crypto = {};
       return WordToHexValue;
     };
 
-    //**    function Utf8Encode(string) removed. Aready defined in pidcrypt_utils.js
+    //**	function Utf8Encode(string) removed. Aready defined in pidcrypt_utils.js
 
     var x=Array();
     var k,AA,BB,CC,DD,a,b,c,d;
@@ -19816,7 +19816,7 @@ var Crypto = {};
     var S31=4, S32=11, S33=16, S34=23;
     var S41=6, S42=10, S43=15, S44=21;
 
-    //  string = Utf8Encode(string); #function call removed
+    //	string = Utf8Encode(string); #function call removed
 
     x = ConvertToWordArray(string);
 
@@ -20313,8 +20313,7 @@ var Pouch = function Pouch(name, opts, callback) {
     throw 'Invalid Adapter';
   }
 
-  var that = this;
-  var cb = function(err) {
+  var adapter = new PouchAdapter(opts, function(err, db) {
     if (err) {
       if (callback) {
         callback(err);
@@ -20322,39 +20321,36 @@ var Pouch = function Pouch(name, opts, callback) {
       return;
     }
 
-    var adapter = new PouchAdapter(opts, function(err, db) {
-      if (err) {
-        if (callback) {
-          callback(err);
-        }
-        return;
-      }
-
-      for (var plugin in Pouch.plugins) {
-        // In future these will likely need to be async to allow the plugin
-        // to initialise
-        var pluginObj = Pouch.plugins[plugin](db);
-        for (var api in pluginObj) {
-          // We let things like the http adapter use its own implementation
-          // as it shares a lot of code
-          if (!(api in db)) {
-            db[api] = pluginObj[api];
-          }
+    for (var plugin in Pouch.plugins) {
+      // In future these will likely need to be async to allow the plugin
+      // to initialise
+      var pluginObj = Pouch.plugins[plugin](db);
+      for (var api in pluginObj) {
+        // We let things like the http adapter use its own implementation
+        // as it shares a lot of code
+        if (!(api in db)) {
+          db[api] = pluginObj[api];
         }
       }
-      callback(null, db);
-    });
-    for (var j in adapter) {
-      that[j] = adapter[j];
     }
-  };
-
-  // Don't call Pouch.open for ALL_DBS
-  // Pouch.open saves the db's name into ALL_DBS
-  if (name === Pouch.allDBName(opts.adapter)) {
-    cb();
-  } else {
-    Pouch.open(opts.adapter, opts.name, cb);
+    db.taskqueue.ready(true);
+    db.taskqueue.execute(db);
+    callback(null, db);
+  });
+  for (var j in adapter) {
+    this[j] = adapter[j];
+  }
+  for (var plugin in Pouch.plugins) {
+    // In future these will likely need to be async to allow the plugin
+    // to initialise
+    var pluginObj = Pouch.plugins[plugin](this);
+    for (var api in pluginObj) {
+      // We let things like the http adapter use its own implementation
+      // as it shares a lot of code
+      if (!(api in this)) {
+        this[api] = pluginObj[api];
+      }
+    }
   }
 };
 
@@ -21573,8 +21569,8 @@ var Changes = function() {
 
   api.notify = function(db_name) {
     if (!listeners[db_name]) { return; }
-    for (var i in listeners[db_name]) {
-      /*jshint loopfunc: true */
+    
+    Object.keys(listeners[db_name]).forEach(function (i) {
       var opts = listeners[db_name][i].opts;
       listeners[db_name][i].db.changes({
         include_docs: opts.include_docs,
@@ -21590,7 +21586,7 @@ var Changes = function() {
           }
         }
       });
-    }
+    });
   };
 
   return api;
@@ -21608,6 +21604,7 @@ var PouchAdapter = function(opts, callback) {
 
 
   var api = {};
+
   var customApi = Pouch.adapters[opts.adapter](opts, function(err, db) {
     if (err) {
       if (callback) {
@@ -21621,7 +21618,14 @@ var PouchAdapter = function(opts, callback) {
         db[j] = api[j];
       }
     }
-    callback(err, db);
+
+    // Don't call Pouch.open for ALL_DBS
+    // Pouch.open saves the db's name into ALL_DBS
+    if (opts.name === Pouch.ALL_DBS) {
+      callback(err, db);
+    } else {
+      Pouch.open(opts.adapter, opts.name, function(err) { callback(err, db); });
+    }
   });
 
 
@@ -21758,6 +21762,10 @@ var PouchAdapter = function(opts, callback) {
 
   /* Begin api wrappers. Specific functionality to storage belongs in the _[method] */
   api.get = function (id, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('get', arguments);
+      return;
+    }
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
@@ -21784,6 +21792,10 @@ var PouchAdapter = function(opts, callback) {
   };
 
   api.allDocs = function(opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('allDocs', arguments);
+      return;
+    }
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
@@ -21807,26 +21819,42 @@ var PouchAdapter = function(opts, callback) {
   };
 
   api.changes = function(opts) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('changes', arguments);
+      return;
+    }
     return customApi._changes(opts);
   };
 
   api.close = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('close', arguments);
+      return;
+    }
     return customApi._close(callback);
   };
 
   api.info = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('info', arguments);
+      return;
+    }
     return customApi._info(callback);
   };
-  
+
   api.id = function() {
     return customApi._id();
   };
-  
+
   api.type = function() {
     return (typeof customApi._type === 'function') ? customApi._type() : opts.adapter;
   };
 
   api.bulkDocs = function(req, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('bulkDocs', arguments);
+      return;
+    }
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
@@ -21851,6 +21879,31 @@ var PouchAdapter = function(opts, callback) {
   };
 
   /* End Wrappers */
+  var taskqueue = {};
+
+  taskqueue.ready = false;
+  taskqueue.queue = [];
+
+  api.taskqueue = {};
+
+  api.taskqueue.execute = function (db) {
+    if (taskqueue.ready) {
+      taskqueue.queue.forEach(function(d) {
+        db[d.task].apply(null, d.parameters);
+      });
+    }
+  };
+
+  api.taskqueue.ready = function() {
+    if (arguments.length === 0) {
+      return taskqueue.ready;
+    }
+    taskqueue.ready = arguments[0];
+  };
+
+  api.taskqueue.addTask = function(task, parameters) {
+    taskqueue.queue.push({ task: task, parameters: parameters });
+  };
 
   api.replicate = {};
 
@@ -21875,6 +21928,13 @@ var PouchAdapter = function(opts, callback) {
       customApi[j] = api[j];
     }
   }
+
+  // Http adapter can skip setup so we force the db to be ready and execute any jobs
+  if (opts.skipSetup) {
+    api.taskqueue.ready(true);
+    api.taskqueue.execute(api);
+  }
+
   return customApi;
 };
 
@@ -22082,6 +22142,10 @@ var HttpPouch = function(opts, callback) {
   };
 
   api.request = function(options, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('request', arguments);
+      return;
+    }
     options.auth = host.auth;
     options.url = genDBUrl(host, options.url);
     ajax(options, callback);
@@ -22090,6 +22154,10 @@ var HttpPouch = function(opts, callback) {
   // Sends a POST request to the host calling the couchdb _compact function
   //    version: The version of CouchDB it is running
   api.compact = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('compact', arguments);
+      return;
+    }
     ajax({
       auth: host.auth,
       url: genDBUrl(host, '_compact'),
@@ -22101,6 +22169,10 @@ var HttpPouch = function(opts, callback) {
   //    couchdb: A welcome string
   //    version: The version of CouchDB it is running
   api.info = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('info', arguments);
+      return;
+    }
     ajax({
       auth: host.auth,
       method:'GET',
@@ -22112,6 +22184,10 @@ var HttpPouch = function(opts, callback) {
   // The id could be solely the _id in the database, or it may be a
   // _design/ID or _local/ID path
   api.get = function(id, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('get', arguments);
+      return;
+    }
     // If no options were given, set the callback to the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -22206,6 +22282,10 @@ var HttpPouch = function(opts, callback) {
 
   // Delete the document given by doc from the database given by host.
   api.remove = function(doc, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('remove', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -22222,6 +22302,10 @@ var HttpPouch = function(opts, callback) {
 
   // Remove the attachment given by the id and rev
   api.removeAttachment = function idb_removeAttachment(id, rev, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('removeAttachment', arguments);
+      return;
+    }
     ajax({
       auth: host.auth,
       method: 'DELETE',
@@ -22233,6 +22317,10 @@ var HttpPouch = function(opts, callback) {
   // to the document with the given id, the revision given by rev, and
   // add it to the database given by host.
   api.putAttachment = function(id, rev, blob, type, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('putAttachment', arguments);
+      return;
+    }
     if (typeof type === 'function') {
       callback = type;
       type = blob;
@@ -22248,6 +22336,7 @@ var HttpPouch = function(opts, callback) {
     if (rev) {
       url += '?rev=' + rev;
     }
+
     // Add the attachment
     ajax({
       auth: host.auth,
@@ -22262,6 +22351,10 @@ var HttpPouch = function(opts, callback) {
   // Add the document given by doc (in JSON string format) to the database
   // given by host. This fails if the doc has no _id field.
   api.put = function(doc, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('put', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -22301,6 +22394,10 @@ var HttpPouch = function(opts, callback) {
   // given by host. This does not assume that doc is a new document (i.e. does not
   // have a _id or a _rev field.
   api.post = function(doc, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('post', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -22327,6 +22424,10 @@ var HttpPouch = function(opts, callback) {
   // Update/create multiple documents given by req in the database
   // given by host.
   api.bulkDocs = function(req, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('bulkDocs', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -22358,6 +22459,10 @@ var HttpPouch = function(opts, callback) {
   // by host and ordered by increasing id.
   api.allDocs = function(opts, callback) {
     // If no options were given, set the callback to be the second parameter
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('allDocs', arguments);
+      return;
+    }
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
@@ -22428,6 +22533,10 @@ var HttpPouch = function(opts, callback) {
   // TODO According to the README, there should be two other methods here,
   // api.changes.addListener and api.changes.removeListener.
   api.changes = function(opts) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('changes', arguments);
+      return;
+    }
 
     if (Pouch.DEBUG) {
       console.log(db_url + ': Start Changes Feed: continuous=' + opts.continuous);
@@ -22586,6 +22695,10 @@ var HttpPouch = function(opts, callback) {
   // those that do NOT correspond to revisions stored in the database.
   // See http://wiki.apache.org/couchdb/HttpPostRevsDiff
   api.revsDiff = function(req, opts, callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('revsDiff', arguments);
+      return;
+    }
     // If no options were given, set the callback to be the second parameter
     if (typeof opts === 'function') {
       callback = opts;
@@ -22604,6 +22717,10 @@ var HttpPouch = function(opts, callback) {
   };
 
   api.close = function(callback) {
+    if (!api.taskqueue.ready()) {
+      api.taskqueue.addTask('close', arguments);
+      return;
+    }
     call(callback, null);
   };
 
@@ -22719,7 +22836,9 @@ var IdbPouch = function(opts, callback) {
   };
 
   req.onsuccess = function(e) {
+
     idb = e.target.result;
+
     var txn = idb.transaction([META_STORE, DETECT_BLOB_SUPPORT_STORE], IDBTransaction.READ_WRITE);
 
     idb.onversionchange = function() {
@@ -23362,6 +23481,7 @@ var IdbPouch = function(opts, callback) {
     if (!opts.since) opts.since = 0;
 
     if (opts.continuous) {
+      var id = name + ':' + Math.uuid();
       opts.cancelled = false;
       IdbPouch.Changes.addListener(name, id, api, opts);
       IdbPouch.Changes.notify(name);
@@ -23381,7 +23501,6 @@ var IdbPouch = function(opts, callback) {
     opts.since = opts.since && !descending ? opts.since : 0;
 
     var results = [], resultIndices = {}, dedupResults = [];
-    var id = name + ':' + Math.uuid();
     var txn;
 
     if (opts.filter && typeof opts.filter === 'string') {
@@ -24463,11 +24582,18 @@ var MapReduce = function(db) {
     }
 
     if (db.type() === 'http') {
-      return httpQuery(fun, opts, callback);
+	  if (typeof fun === 'function'){
+	    return httpQuery({map: fun}, opts, callback);
+	  }
+	  return httpQuery(fun, opts, callback);
     }
 
     if (typeof fun === 'object') {
       return viewQuery(fun, opts);
+    }
+
+    if (typeof fun === 'function') {
+      return viewQuery({map: fun}, opts);
     }
 
     var parts = fun.split('/');
@@ -24492,45 +24618,55 @@ MapReduce._delete = function() { };
 Pouch.plugin('mapreduce', MapReduce);
 
  })(this);
+/*jshint multistr:true*/
+
 // ## Templates
 var tmpl = {};
 
+tmpl.app = "\
+<h1>Puton</h1>\
+<div id='puton-main'>\
+</div>\
+<a href='#' id='hide-button'>Close</a>\
+<div id='log'></div>";
+
+tmpl.mainView = "\
+<b><label for='db'>db name: </label></b>\
+<input type='text' id='db'/>";
+
 tmpl.log = "\
-    <p class='log log-<%- type %>'>\
-    	<b>\
-    		<small class='count'>\
-    			<%- count %>\
-    		</small>\
-    	</b>\
-    	<%- log %>\
-    </p>\
-";
+<p class='log log-<%- type %>'>\
+    <b>\
+        <small class='count'>\
+            <%- count %>\
+        </small>\
+    </b>\
+    <%- log %>\
+</p>";
 
 
 tmpl.doc_full = "\
 <div class='optionsbar'>\
+    <a class='option revoption'>revs</a>\
+    &nbsp;|&nbsp;\
     <a class='option editoption'>edit</a>\
     &nbsp;|&nbsp;\
     <a class='option deleteoption'>delete</a>\
 </div>\
 <h3 class='key'><%- key %></h3>\
-<pre class='value'><%= value %></pre>\
-";
+<pre class='value'><%= value %></pre>";
 
 tmpl.doc_collapsed = "\
-    <span class='key'><%- key %></span>\
-    &nbsp;\
-    <span class='value'><%- trunc %></span>\
-";
+<span class='key'><%- key %></span>\
+&nbsp;\
+<span class='value'><%- trunc %></span>";
 
 tmpl.doc_edit = "\
-    <textarea class='code-edit' name='code'><%= code %></textarea>\
-    <button class='code-edit-save'>Save</button>\
-";
+<textarea class='code-edit' name='code'><%= code %></textarea>\
+<button class='code-edit-save'>Save</button>";
 
 tmpl.tabs = "\
-    <div class='docs'></div>\
-";
+<div class='docs'></div>";
 
 tmpl.queryInput = "\
     Map: \
@@ -24563,9 +24699,19 @@ tmpl.db = "\
 ";
 
 tmpl.toolbar = "\
-	<a class='button' id='query'>Run Query</a>\
+    <a class='button' id='query'>Run Query</a>\
     <a class='button' id='adddoc'>Add document</a>\
     <div id='puton-tabbuttons'></div>\
+";
+
+tmpl.documents = "\
+    <div class='docs-container'></div>\
+    <div id='puton-revs-container'></div>\
+";
+tmpl.revisions = "<div class='revisions'></div>";
+tmpl.rev_full = "\
+    <h3 class='key'><%- key %></h3>\
+    <pre class='value'><%= value %></pre>\
 ";
 
 tmpl.tabbutton = "<a class='tabbutton><%- label %></a>";
@@ -24576,6 +24722,7 @@ _.each(_.keys(tmpl), function(key){
     compiled[key] = _.template(tmpl[key]);
 });
 tmpl = compiled;
+
 // stolen from SO.
 function syntaxHighlight(json, nohtml) {
     if (typeof json !== 'string') {
@@ -24609,12 +24756,74 @@ window.Puton = (function() {
     };
 
     //
+    // Main Application
+    //
+    Puton.app = Backbone.View.extend({
+        id: "puton-container",
+        tagName: "div",
+        initialize: function() {
+        },
+        start: function() {
+            this.render();
+            this.logview = new v.Log();
+            this.mainPage();
+        },
+        render: function() {
+            this.$el.html(tmpl.app());
+            return this;
+        },
+        events: {
+            "changeView": "changeView",
+            "selectDB": "selectDB",
+            "click h1": "mainPage",
+            "click #hide-button": "hide"
+        },
+        mainPage: function(e) {
+            this.currentView = new v.Main({
+                el: this.$("#puton-main")
+            }).render();
+        },
+        hide: function(e) {
+            this.$el.hide();
+        },
+        selectDB: function(e, dbname) {
+            var that = this;
+            Pouch(dbname, function(err, db) {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+
+                // tmp.
+                window.db = db;
+
+                var database = new m.DB(null, {db: db});
+
+                that.changeView(null, database);
+            });
+        },
+        changeView: function(e, model) {
+            // TODO.
+            // garbage collection
+            this.currentView = new v.DB({
+                el: this.$("#puton-main"),
+                model: model
+            });
+            this.currentView.render();
+        }
+    });
+
+    //
     // Views
     //
     var v = {};
     v.Main = Backbone.View.extend({
         events: {
             "keydown #db": "submit"
+        },
+        render: function() {
+            this.$el.html(tmpl.mainView());
+            return this;
         },
         submit: function(e) {
 
@@ -24910,6 +25119,7 @@ window.Puton = (function() {
             this.listenTo(this.collection, "remove", this.render);
         },
         render: function() {
+
             var fragment = document.createDocumentFragment();
             this.collection.each(function(doc){
                 var docview = new v.Document({
@@ -24918,7 +25128,81 @@ window.Puton = (function() {
                 });
                 fragment.appendChild(docview.render().el);
             });
-            this.$el.html(fragment);
+            this.$el.html(tmpl.documents);
+            this.$el.find('.docs-container').html(fragment);
+        }
+    });
+
+    v.Revisions = Backbone.View.extend({
+        className: 'revs',
+        initialize: function(opts) {
+            this.db = opts.db;
+            this.doc_id = opts.doc_id;
+        },
+        render: function() {
+            var $el = this.$el;
+            var doc_id = this.doc_id;
+
+            this.db.get(doc_id, {
+                revs: true,
+                revs_info: true
+            }, function(err, doc) {
+                if (err) {
+                    return console.error(err);
+                }
+
+                var $fragment = $(tmpl.revisions({}));
+                
+                doc._revs_info.forEach(function(rev) {
+                    var revisionView = new v.Revision({
+                        db: this.db
+                    });
+                    var $tmp = $('<div/>');
+                    $fragment.append($tmp);
+
+                    if (rev.status === 'available') {
+                        this.db.get(doc_id, {rev: rev.rev}, function(err, doc) {
+                            if (err) {
+                                return console.error(err);
+                            }
+                            $tmp.html( 
+                                revisionView.render(doc, doc_id).el );
+                            reRender();
+                        });
+                    } else {
+                        $tmp.html( 
+                            revisionView.render(false, doc_id).el );
+                    }
+
+                });
+
+                function reRender() {
+                    $el.html($fragment);
+                }
+                reRender();
+
+            });
+        }
+    });
+
+    v.Revision = Backbone.View.extend({
+        className: 'rev',
+        render: function(doc, doc_id) {
+            var model = doc;
+
+            if (model) {
+                this.$el.html(tmpl.rev_full({
+                    key: model._rev,
+                    value: syntaxHighlight(model)
+                }));
+            } else {
+                this.$el.html(tmpl.rev_full({
+                    key: doc_id,
+                    value: 'compacted'
+                }));
+            }
+
+            return this;
         }
     });
 
@@ -25001,6 +25285,7 @@ window.Puton = (function() {
             }
         },
         events: {
+            "click .revoption": "revOption",
             "click .editoption": "editOption",
             "click .deleteoption": "deleteOption",
             "click": "toggleView",
@@ -25021,6 +25306,17 @@ window.Puton = (function() {
                 // this.model.id
                 this.$el.trigger("deleteDocument", this.model.id);
             }
+        },
+        revOption: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var revisions = new v.Revisions({
+                el: $("#puton-revs-container"),
+                db: this.db,
+                doc_id: (this.model.toJSON())._id
+            });
+            revisions.render();
         },
         toggleView: function(e) {
             e.preventDefault();
@@ -25091,83 +25387,16 @@ window.Puton = (function() {
 
     Puton.models = m;
 
-    //
-    // Main Application
-    //
-    Puton.app = Backbone.View.extend({
-        el: "#puton-container",
-        initialize: function() {
-        },
-        start: function() {
-            this.logview = new v.Log();
-            this.currentView = new v.Main({
-                el: this.$("#puton-main")
-            });
-
-            // tmp.
-            // this.selectDB(null, "idb://test");
-        },
-        events: {
-            "changeView": "changeView",
-            "selectDB": "selectDB"
-        },
-        selectDB: function(e, dbname) {
-            var that = this;
-            Pouch(dbname, function(err, db) {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-
-                // tmp.
-                window.db = db;
-
-                var database = new m.DB(null, {db: db});
-
-                that.changeView(null, database);
-            });
-        },
-        changeView: function(e, model) {
-            // TODO.
-            // garbage collection
-            this.currentView = new v.DB({
-                el: this.$("#puton-main"),
-                model: model
-            });
-            this.currentView.render();
-        }
-    });
-
     return Puton;
 })();
+
 /*jshint multistr:true*/
 $(function() {
-    // create divs
-    var markup = [
-        "<div id='puton-container'>",
-            "<h1>Puton</h1>",
-            "<div id='puton-main'>",
-                "<b><label for='db'>db name: </label></b>",
-                "<input type='text' id='db'/>",
-            "</div>",
-            "<a href='#' id='hide-button'>Close</a>",
-            "<div id='log'></div>",
-        "</div>"
-    ].join("");
-
-    $(markup).appendTo($("body"));
-
     //
     // Start Puton
     //
-    var x = new Puton();
-
-    // TODO.
-    // this should go in `Puton.app`
-    $('#hide-button').click(function(e) {
-        $("#puton-container").hide();
-        return false;
-    });
+    var puton = new Puton();
+    $('body').append(puton._app.$el);
 
     if (typeof window.PUTON_LOADED && window.PUTON_LOADED === -1) {
         window.PUTON_LOADED = 1;
