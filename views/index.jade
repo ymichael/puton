@@ -43,11 +43,6 @@ html
                     ```
                     $ npm install
                     ```
-                    
-                    -  run grunt build
-                    ```
-                    $ grunt release
-                    ```
 
                     - starts puton
                     ```
@@ -58,6 +53,27 @@ html
                     ```
                     $ NODE_ENV=production node puton.js
                     ```
+
+                    #### Grunt tasks
+                    - `lint`
+                        - Lint the various files
+                    - `build`
+                        - concatenate js/css files
+                    - `minify`
+                        - minify js/css files
+                    - `updatepouch`
+                        - Update Pouch to latest version
+                    - `test`
+                        - Runs Jasmine tests
+                    - `browsertests`
+                        - Starts Connect Server to serve tests at http://localhost:9001
+                    - `release` __(default task)__
+                        - `lint`
+                        - `exec:updatePouch`
+                        - `test`
+                        - `build`
+                        - `minify`
+                    - `run`: Starts Puton
 
             footer
                 p.

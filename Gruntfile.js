@@ -108,9 +108,11 @@ module.exports = function(grunt) {
 
     grunt.registerTask('lint', ['clean','jshint']);
     grunt.registerTask('test', ['jasmine']);
+    grunt.registerTask('browsertest', ['connect']);
     grunt.registerTask('build', ['concat:dist', 'less:release']);
     grunt.registerTask("minify", ['uglify','cssmin']);
-    grunt.registerTask("debug", ['test','build']);
-    grunt.registerTask("release", ['debug', 'minify']);
-    grunt.registerTask("default", ['release', 'exec:default']);
+    grunt.registerTask("updatepouch", ['exec:updatePouch']);
+    grunt.registerTask("release", ['lint','updatepouch','test', 'build', 'minify']);
+    grunt.registerTask("default", ['release']);
+    grunt.registerTask("run", ['exec:default']);
 };
