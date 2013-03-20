@@ -1,6 +1,6 @@
 {
   "name": "puton",
-  "version": "0.0.1-34",
+  "version": "0.0.1-44",
   "dependencies": {
     "express": "*",
     "jade": "*",
@@ -9,7 +9,6 @@
   },
   "subdomain": "puton",
   "scripts": {
-    "predeploy": "grunt",
     "start": "node puton.js"
   },
   "engines": {

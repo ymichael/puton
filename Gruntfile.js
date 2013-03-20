@@ -107,7 +107,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-exec');
 
     grunt.registerTask('lint', ['clean','jshint']);
-    grunt.registerTask('test', ['connect']);
+    grunt.registerTask('test', ['jasmine']);
     grunt.registerTask('build', ['concat:dist', 'less:release']);
     grunt.registerTask("minify", ['uglify','cssmin']);
     grunt.registerTask("debug", ['test','build']);
