@@ -17,9 +17,6 @@ $ npm install -g grunt-cli
 # install npm dependencies
 $ npm install
 
-# run grunt build
-$ grunt release
-
 # starts puton
 $ node puton.js
 ```
