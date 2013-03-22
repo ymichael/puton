@@ -10,16 +10,52 @@ There are several constraints in this regards _(same origin policy being one of 
 ## Developing puton
 To get started, run the following commands:
 
-```sh
-# install grunt-cli
-$ npm install -g grunt-cli
-
-# install npm dependencies
-$ npm install
-
-# starts puton
-$ node puton.js
+- install grunt-cli
 ```
+$ npm install -g grunt-cli
+```
+
+- install npm dependencies
+```
+$ npm install
+```
+
+- starts puton
+```
+node puton.js
+```
+
+- starts puton in production mode
+```
+$ NODE_ENV=production node puton.js
+```
+
+#### Grunt tasks
+- `lint`
+    - Lint the various files
+- `build:all`
+    - concatenate lib files
+    - uglify lib files
+    - `grunt build`
+- `build`
+    - concatenate script files
+    - uglify script files
+    - concat `lib.min` with `script.min`
+- `minify`
+    - minify css files
+- `updatepouch`
+    - Update Pouch to latest version
+- `test`
+    - Runs Jasmine tests
+- `browsertests`
+    - Starts Connect Server to serve tests at http://localhost:9001
+- `release` __(default task)__
+    - `lint`
+    - `updatepouch`
+    - `test`
+    - `build`
+    - `minify`
+- `run`: Starts Puton
 
 [1]: http://pouchdb.com/
 [2]: http://couchdb.apache.org/

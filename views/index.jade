@@ -57,10 +57,16 @@ html
                     #### Grunt tasks
                     - `lint`
                         - Lint the various files
+                    - `build:all`
+                        - concatenate lib files
+                        - uglify lib files
+                        - `grunt build`
                     - `build`
-                        - concatenate js/css files
+                        - concatenate script files
+                        - uglify script files
+                        - concat `lib.min` with `script.min`
                     - `minify`
-                        - minify js/css files
+                        - minify css files
                     - `updatepouch`
                         - Update Pouch to latest version
                     - `test`
