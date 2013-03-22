@@ -34,25 +34,24 @@ module.exports = function(grunt) {
         concat: {
             dist: {
                 src: sourceFiles,
-                dest: 'public/dist/debug/puton.js'
+                dest: 'public/dist/debug/scripts.js'
             },
-
             // concat the library files only
             lib: {
                 src: libFiles,
                 dest: 'public/dist/debug/lib.js'
             },
-            // combine pouch with minifed lib
+            // combine minified pouch with minifed lib
             fulldist: {
-                src: ['public/dist/debug/lib.min.js', 'public/dist/debug/puton.js'],
-                dest: 'public/dist/release/puton.js'
+                src: ['public/dist/debug/lib.min.js', 'public/dist/debug/scripts.min.js'],
+                dest: 'public/dist/release/puton.min.js'
             }
         },
         uglify: {
-            release: {
+            dist: {
                 files: {
-                    "public/dist/release/puton.min.js": [
-                        "public/dist/release/puton.js"
+                    'public/dist/debug/scripts.min.js': [
+                        'public/dist/debug/scripts.js'
                     ]
                 }
             },
@@ -128,11 +127,11 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-jasmine');
     grunt.loadNpmTasks('grunt-exec');
 
-    grunt.registerTask('lint', ['clean','jshint']);
+    grunt.registerTask('lint', ['jshint']);
     grunt.registerTask('test', ['jasmine']);
     grunt.registerTask('browsertest', ['connect']);
-    grunt.registerTask('build', ['concat:dist', 'concat:fulldist', 'less:release']);
-    grunt.registerTask("minify", ['uglify:release','cssmin']);
+    grunt.registerTask('build', ['concat:dist', 'uglify:dist', 'concat:fulldist', 'less:release']);
+    grunt.registerTask("minify", ['cssmin']);
     grunt.registerTask("updatepouch", ['exec:updatePouch']);
     grunt.registerTask("release", ['lint','updatepouch','test', 'build', 'minify']);
     grunt.registerTask("default", ['release']);
