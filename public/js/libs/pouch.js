@@ -670,7 +670,7 @@ var ajax = function ajax(options, callback) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ajax;
 }
-/*globals PouchAdapter: true */
+/*globals PouchAdapter: true, extend: true */
 
 "use strict";
 
@@ -688,6 +688,10 @@ var Pouch = function Pouch(name, opts, callback) {
   if (typeof name === 'object') {
     opts = name;
     name = undefined;
+  }
+
+  if (typeof callback === 'undefined') {
+    callback = function() {};
   }
 
   var backend = Pouch.parseAdapter(opts.name || name);
@@ -997,17 +1001,19 @@ Pouch.Errors = {
     reason: 'Something wrong with the request'
   }
 };
-
+Pouch.error = function(error, reason){
+ return extend({}, error, {reason: reason});
+};
 if (typeof module !== 'undefined' && module.exports) {
   global.Pouch = Pouch;
   Pouch.merge = require('./pouch.merge.js').merge;
   Pouch.collate = require('./pouch.collate.js').collate;
   Pouch.replicate = require('./pouch.replicate.js').replicate;
   Pouch.utils = require('./pouch.utils.js');
+  extend = Pouch.utils.extend;
   module.exports = Pouch;
-
   var PouchAdapter = require('./pouch.adapter.js');
-  // load adapters known to work under node
+  //load adapters known to work under node
   var adapters = ['leveldb', 'http'];
   adapters.map(function(adapter) {
     var adapter_path = './adapters/pouch.'+adapter+'.js';
@@ -1628,7 +1634,7 @@ var parseDocId = function(id) {
 
 // check if a specific revision of a doc has been deleted
 //  - metadata: the metadata object from the doc store
-//  - rev: (optional) the revision to check. defaults to metadata.rev
+//  - rev: (optional) the revision to check. defaults to winning revision
 var isDeleted = function(metadata, rev) {
   if (!metadata || !metadata.deletions) {
     return false;
@@ -1990,7 +1996,7 @@ var Changes = function() {
 };
 
 
-/*globals yankError: false, extend: false, call: false, parseDocId: false */
+/*globals yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
 
 "use strict";
 
@@ -2156,6 +2162,41 @@ var PouchAdapter = function(opts, callback) {
     });
   };
 
+  // compact one document and fire callback
+  // by compacting we mean removing all revisions which
+  // are not leaves in revision tree
+  var compactDocument = function(docId, callback) {
+    customApi._getRevisionTree(docId, function(rev_tree){
+      var nonLeaves = [];
+      traverseRevTree(rev_tree, function(isLeaf, pos, id) {
+        var rev = pos + '-' + id;
+        if (!isLeaf) {
+          nonLeaves.push(rev);
+        }
+      });
+      customApi._removeDocRevisions(docId, nonLeaves, callback);
+    });
+  };
+  // compact the whole database using single document
+  // compaction
+  api.compact = function(callback) {
+    api.allDocs(function(err, res) {
+      var count = res.rows.length;
+      if (!count) {
+        call(callback);
+        return;
+      }
+      res.rows.forEach(function(row) {
+        compactDocument(row.key, function() {
+          count--;
+          if (!count) {
+            call(callback);
+          }
+        });
+      });
+    });
+  };
+
 
   /* Begin api wrappers. Specific functionality to storage belongs in the _[method] */
   api.get = function (id, opts, callback) {
@@ -2166,6 +2207,35 @@ var PouchAdapter = function(opts, callback) {
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
+    }
+
+    if (opts.open_revs) {
+      customApi._getRevisionTree(id, function(rev_tree){
+        var leaves = [];
+        if (opts.open_revs === "all") {
+          leaves = collectLeaves(rev_tree).map(function(leaf){
+            return leaf.rev;
+          });
+        } else {
+          leaves = opts.open_revs; // should be some validation here
+        }
+        var result = [];
+        var count = leaves.length;
+        leaves.forEach(function(leaf){
+          api.get(id, {rev: leaf}, function(err, doc){
+            if (!err) {
+              result.push({ok: doc});
+            } else {
+              result.push({missing: leaf});
+            }
+            count--;
+            if(!count) {
+              call(callback, null, result);
+            }
+          });
+        });
+      });
+      return;
     }
 
     id = parseDocId(id);
@@ -2669,7 +2739,7 @@ var HttpPouch = function(opts, callback) {
     ajax(options, function(err, doc, xhr) {
       // If the document does not exist, send an error to the callback
       if (err) {
-        return call(callback, Pouch.Errors.MISSING_DOC);
+        return call(callback, err);
       }
 
       // Send the document to the callback
@@ -3586,55 +3656,28 @@ var IdbPouch = function(opts, callback) {
     var result;
     var txn = idb.transaction([DOC_STORE, BY_SEQ_STORE, ATTACH_STORE], 'readonly');
     txn.oncomplete = function() {
-      // Leaves are set when we ask about open_revs
-      // Using this approach they can be quite easily abstracted out to some
-      // generic api.get
-      if (leaves) {
-        result = [];
-        var count = leaves.length;
-        leaves.forEach(function(leaf){
-          api.get(id.docId, {rev: leaf}, function(err, doc){
-            if (!err) {
-              result.push({ok: doc});
-            } else {
-              result.push({missing: leaf});
-            }
-            count--;
-            if(!count) {
-              finish();
-            }
-          });
-        });
-      } else {
-        finish();
-      }
-    };
-
-    function finish() {
       if ('error' in result) {
         call(callback, result);
       } else {
         call(callback, null, result);
       }
-    }
+    };
 
     var leaves;
     txn.objectStore(DOC_STORE).get(id.docId).onsuccess = function(e) {
       var metadata = e.target.result;
-      if (!e.target.result || (isDeleted(metadata, opts.rev) && !opts.rev)) {
+      // we can determine the result here if:
+      // 1. there is no such document
+      // 2. the document is deleted and we don't ask about specific rev
+      // When we ask with opts.rev we expect the answer to be either
+      // doc (possibly with _deleted=true) or missing error
+      if (!metadata) {
         result = Pouch.Errors.MISSING_DOC;
         return;
       }
-
-      if (opts.open_revs) {
-        if (opts.open_revs === "all") {
-          leaves = collectLeaves(metadata.rev_tree).map(function(leaf){
-            return leaf.rev;
-          });
-        } else {
-          leaves = opts.open_revs; // should be some validation here
-        }
-        return; // open_revs can be used only with revs
+      if (isDeleted(metadata) && !opts.rev) {
+        result = extend({}, Pouch.Errors.MISSING_DOC, {reason:"deleted"});
+        return;
       }
 
       var rev = Pouch.merge.winningRev(metadata);
@@ -4018,14 +4061,39 @@ var IdbPouch = function(opts, callback) {
     call(callback, null);
   };
 
+  // compaction internal functions
+  api._getRevisionTree = function(docId, callback) {
+    var txn = idb.transaction([DOC_STORE], 'readonly');
+    var req = txn.objectStore(DOC_STORE).get(docId);
+    req.onsuccess = function (event) {
+      var doc = event.target.result;
+      callback(doc.rev_tree);
+    };
+  };
+
+  api._removeDocRevisions = function(docId, revs, callback) {
+    var txn = idb.transaction([BY_SEQ_STORE], IDBTransaction.READ_WRITE);
+    var index = txn.objectStore(BY_SEQ_STORE).index('_rev');
+    revs.forEach(function(rev) {
+      index.getKey(rev).onsuccess = function(e) {
+        var seq = e.target.result;
+        if (!seq) {
+          return;
+        }
+        var req = txn.objectStore(BY_SEQ_STORE).delete(seq);
+      };
+    });
+    txn.oncomplete = function() {
+      callback();
+    };
+  };
+  // end of compaction internal functions
+
   return api;
 };
 
 IdbPouch.valid = function idb_valid() {
-  if (!document.location.host) {
-    console.error('indexedDB cannot be used in pages served from the filesystem');
-  }
-  return !!window.indexedDB && !!document.location.host;
+  return !!window.indexedDB;
 };
 
 IdbPouch.destroy = function idb_destroy(name, callback) {
@@ -4430,7 +4498,6 @@ var webSqlPouch = function(opts, callback) {
 
   api._get = function(id, opts, callback) {
     var result;
-    var leaves;
     db.transaction(function(tx) {
       var sql = 'SELECT * FROM ' + DOC_STORE + ' WHERE id=?';
       tx.executeSql(sql, [id.docId], function(tx, results) {
@@ -4439,20 +4506,9 @@ var webSqlPouch = function(opts, callback) {
           return;
         }
         var metadata = JSON.parse(results.rows.item(0).json);
-        if (isDeleted(metadata, opts.rev) && !opts.rev) {
-          result = Pouch.Errors.MISSING_DOC;
+        if (isDeleted(metadata) && !opts.rev) {
+          result = extend({}, Pouch.Errors.MISSING_DOC, {reason:"deleted"});
           return;
-        }
-
-        if (opts.open_revs) {
-          if (opts.open_revs === "all") {
-            leaves = collectLeaves(metadata.rev_tree).map(function(leaf){
-              return leaf.rev;
-            });
-          } else {
-            leaves = opts.open_revs; // should be some validation here
-          }
-          return; // open_revs can be used only with revs
         }
 
         var rev = Pouch.merge.winningRev(metadata);
@@ -4510,35 +4566,13 @@ var webSqlPouch = function(opts, callback) {
           }
         });
       });
-    }, unknownError(callback), function() {
-      if (leaves) {
-        result = [];
-        var count = leaves.length;
-        leaves.forEach(function(leaf){
-          api.get(id.docId, {rev: leaf}, function(err, doc){
-            if (!err) {
-              result.push({ok: doc});
-            } else {
-              result.push({missing: leaf});
-            }
-            count--;
-            if(!count) {
-              finish();
-            }
-          });
-        });
-      } else {
-        finish();
-      }
-    });
-
-    function finish(){
+    }, unknownError(callback), function () {
       if ('error' in result) {
         call(callback, result);
       } else {
         call(callback, null, result);
       }
-    }
+    });
   };
 
   api._allDocs = function(opts, callback) {
@@ -4631,6 +4665,7 @@ var webSqlPouch = function(opts, callback) {
     if (!opts.since) opts.since = 0;
 
     if (opts.continuous) {
+      var id = name + ':' + Math.uuid();
       opts.cancelled = false;
       webSqlPouch.Changes.addListener(name, id, api, opts);
       webSqlPouch.Changes.notify(name);
@@ -4650,7 +4685,6 @@ var webSqlPouch = function(opts, callback) {
     opts.since = opts.since && !descending ? opts.since : 0;
 
     var results = [], resultIndices = {}, dedupResults = [];
-    var id = name + ':' + Math.uuid();
     var txn;
 
     if (opts.filter && typeof opts.filter === 'string') {
@@ -4750,6 +4784,27 @@ var webSqlPouch = function(opts, callback) {
       });
     }
   }
+  // comapction internal functions
+  api._getRevisionTree = function(docId, callback) {
+    db.transaction(function (tx) {
+      var sql = 'SELECT json AS metadata FROM ' + DOC_STORE + ' WHERE id = ?';
+      tx.executeSql(sql, [docId], function(tx, result) {
+        var data = JSON.parse(result.rows.item(0).metadata);
+        callback(data.rev_tree);
+      });
+    });
+  };
+  api._removeDocRevisions = function(docId, revs, callback) {
+    db.transaction(function (tx) {
+      var sql = 'DELETE FROM ' + BY_SEQ_STORE + ' WHERE rev IN (' +
+        revs.map(function(rev){return quote(rev);}).join(',') + ')';
+      tx.executeSql(sql, [], function(tx, result) {
+        callback();
+      });
+    });
+  };
+  // end of compaction internal functions
+
   return api;
 }
 

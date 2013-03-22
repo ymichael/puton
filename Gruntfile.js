@@ -1,12 +1,13 @@
 module.exports = function(grunt) {
-    var sourceFiles = [
+    var libFiles = [
         'public/js/libs/jquery.js',
         'public/js/libs/jquery.tree.js',
         'public/js/libs/underscore.js',
         'public/js/libs/codemirror.js',
         'public/js/libs/backbone.js',
-        'public/js/libs/pouch.js',
-
+        'public/js/libs/pouch.js'
+    ];
+    var sourceFiles = [
         // templates
         'public/js/templates/template.js',
 
@@ -15,6 +16,9 @@ module.exports = function(grunt) {
         'public/js/scripts/app.js',
         'public/js/scripts/start.js'
     ];
+
+    var allFiles = libFiles;
+    for (var i=0;i<sourceFiles.length;++i) { allFiles.push(sourceFiles[i]); }
 
     grunt.initConfig({
         clean: ['public/dist/'],
@@ -31,13 +35,31 @@ module.exports = function(grunt) {
             dist: {
                 src: sourceFiles,
                 dest: 'public/dist/debug/puton.js'
+            },
+
+            // concat the library files only
+            lib: {
+                src: libFiles,
+                dest: 'public/dist/debug/lib.js'
+            },
+            // combine pouch with minifed lib
+            fulldist: {
+                src: ['public/dist/debug/lib.min.js', 'public/dist/debug/puton.js'],
+                dest: 'public/dist/release/puton.js'
             }
         },
         uglify: {
             release: {
                 files: {
                     "public/dist/release/puton.min.js": [
-                        "public/dist/debug/puton.js"
+                        "public/dist/release/puton.js"
+                    ]
+                }
+            },
+            lib: {
+                files: {
+                    'public/dist/debug/lib.min.js': [
+                        'public/dist/debug/lib.js'
                     ]
                 }
             }
@@ -61,7 +83,7 @@ module.exports = function(grunt) {
         },
         jasmine: {
             all: {
-              src: sourceFiles,
+              src: allFiles,
               options: {
                 specs: 'spec/*.spec.js'
               }
@@ -109,10 +131,14 @@ module.exports = function(grunt) {
     grunt.registerTask('lint', ['clean','jshint']);
     grunt.registerTask('test', ['jasmine']);
     grunt.registerTask('browsertest', ['connect']);
-    grunt.registerTask('build', ['concat:dist', 'less:release']);
-    grunt.registerTask("minify", ['uglify','cssmin']);
+    grunt.registerTask('build', ['concat:dist', 'concat:fulldist', 'less:release']);
+    grunt.registerTask("minify", ['uglify:release','cssmin']);
     grunt.registerTask("updatepouch", ['exec:updatePouch']);
     grunt.registerTask("release", ['lint','updatepouch','test', 'build', 'minify']);
     grunt.registerTask("default", ['release']);
     grunt.registerTask("run", ['exec:default']);
+
+
+    grunt.registerTask("build:lib", ['concat:lib', 'uglify:lib']);
+    grunt.registerTask("build:all", ['build:lib', 'build', 'minify']);
 };
