@@ -71,26 +71,48 @@ window.Puton = (function() {
     //
     var v = {};
     v.Main = Backbone.View.extend({
+        initialize: function() {
+            this.allDbs = [];
+        },
+        updateAllDbs: function() {
+            var that = this;
+            Pouch.allDbs(function(err, dbs) {
+                that.allDbs = dbs;
+                that._render();
+            });
+        },
         events: {
-            "keydown #db": "submit"
+            "keydown #db": "submit",
+            "click .dbname": "selectDb"
         },
         render: function() {
-            this.$el.html(tmpl.mainView());
+            this.updateAllDbs();
+            return this._render();
+        },
+        _render: function() {
+            this.$el.html(tmpl.mainView({
+                allDbs: this.allDbs
+            }));
             return this;
         },
+        selectDb: function(e) {
+            var db = $(e.target).html();
+            this.dbSelected(db);
+        },
         submit: function(e) {
-
             if (e.keyCode === 13) {
-                var dbname = this.$("#db").val();
+                var db = this.$("#db").val();
 
                 // prevent empty string
-                if (dbname.length === 0) {
-                    // noop.
+                if (db.length === 0) {
                     return;
                 }
 
-                this.$el.trigger('selectDB', dbname);
+                this.dbSelected(db);
             }
+        },
+        dbSelected: function(db) {
+            this.$el.trigger('selectDB', db);
         }
     });
 

@@ -12,7 +12,12 @@ tmpl.app = "\
 
 tmpl.mainView = "\
 <b><label for='db'>db name: </label></b>\
-<input type='text' id='db'/>";
+<input type='text' id='db'/>\
+<ul>\
+    <%  _.each(allDbs, function(db) { %>\
+        <li class='dbname'><%= db %></li>\
+    <% }) %>\
+</ul>";
 
 tmpl.log = "\
 <p class='log log-<%- type %>'>\
