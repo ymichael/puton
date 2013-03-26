@@ -55,6 +55,9 @@
   margin-top: -20px;
   display: inline-block;
 }
+#puton .puton-db-info {
+  font-size: 22px;
+}
 #puton .puton-dbnames {
   margin-top: 20px;
   margin: 0;

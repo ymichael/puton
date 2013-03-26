@@ -23,11 +23,15 @@ tmpl.mainView = "\
 \
 <div class='puton-section'>\
     <h2>Existing Pouches:</h2>\
-    <ul class='puton-dbnames'>\
-        <%  _.each(allDbs, function(db) { %>\
-            <li class='puton-dbname'><%= db %></li>\
-        <% }) %>\
-    </ul>\
+    <%  if (allDbs.length === 0) { %>\
+        <p class='puton-db-info'>No Existing Pouches :(</p>\
+    <%  } else { %>\
+        <ul class='puton-dbnames'>\
+            <%  _.each(allDbs, function(db) { %>\
+                <li class='puton-dbname'><%= db %></li>\
+            <% }) %>\
+        </ul>\
+    <% } %>\
 </div>";
 
 tmpl.log = "\
