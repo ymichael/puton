@@ -7,17 +7,28 @@ tmpl.app = "\
 <h1>Puton</h1>\
 <div id='puton-main'>\
 </div>\
-<a href='#' id='hide-button'>Close</a>\
-<div id='log'></div>";
+<a href='#' id='puton-hide-button'>Close</a>\
+<div id='puton-log'></div>";
 
 tmpl.mainView = "\
-<b><label for='db'>db name: </label></b>\
-<input type='text' id='db'/>\
-<ul>\
-    <%  _.each(allDbs, function(db) { %>\
-        <li class='dbname'><%= db %></li>\
-    <% }) %>\
-</ul>";
+\
+<div class='puton-section'>\
+    <h2>Open a Pouch:</h2>\
+    <div class='puton-main-input'>\
+        <label class='puton-db-label' for='puton-db-input'>Pouch(</label>\
+        <input type='text' id='puton-db-input'/>\
+        <label class='puton-db-label' for='puton-db-input'>);</label>\
+    </div>\
+</div>\
+\
+<div class='puton-section'>\
+    <h2>Existing Pouches:</h2>\
+    <ul class='puton-dbnames'>\
+        <%  _.each(allDbs, function(db) { %>\
+            <li class='puton-dbname'><%= db %></li>\
+        <% }) %>\
+    </ul>\
+</div>";
 
 tmpl.log = "\
 <p class='log log-<%- type %>'>\

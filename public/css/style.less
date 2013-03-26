@@ -1,5 +1,9 @@
-#puton-container {
+@import url(http://fonts.googleapis.com/css?family=Source+Code+Pro);
+@fontcolor: #555;
+@selected: #a51805;
+#puton {
     padding: 20px;
+    color: @fontcolor;
     overflow: auto;
     background-color: white;
     position: fixed;
@@ -11,10 +15,75 @@
     padding: 50px;
     font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
 
-    h1 {
-      font-weight: 100;
-      color: black;
+    #puton-hide-button {
+        position: absolute;
+        top: 30px;
+        right: 30px;
+        width: 100px;
+        text-align: right;
+        display: block;
     }
+
+    h1, h2, h3, h4, h5 {
+      margin: 15px 0;
+      color: darken(@fontcolor, 15);
+    }
+
+    .puton-section {
+        padding: 5px 0;
+        margin: 10px 0;
+        border: none;
+    }
+
+    //
+    // Main View
+    //
+    .puton-main-input {
+        width: 700px;
+        .puton-db-label {
+            display: inline-block;
+            font: 40px 'Source Code Pro', sans-serif;
+            letter-spacing: -1px;
+            line-height: 40px;
+        }
+        #puton-db-input {
+            font: 20px 'Source Code Pro', sans-serif;
+            line-height: 40px;
+            width: 200px;
+            border: none;
+            outline: none;
+            border-bottom: solid 3px @fontcolor;
+            margin-left: 10px;
+            margin-right: 10px;
+            margin-top: -20px;
+            display: inline-block;
+        }
+    }
+
+    .puton-dbnames {
+        margin-top: 20px;
+        margin: 0;
+        padding: 0;
+        .puton-dbname {
+            list-style: none;
+            padding: 5px 10px;
+            margin: 15px 0;
+            font-size: 22px;
+            cursor: pointer;
+            &:nth-child(odd) {
+                border-left: solid 15px #ddd;
+            }
+            &:nth-child(even) {
+                border-left: solid 15px #ccc;
+            }
+            &:hover {
+                color: black;
+                font-weight: bold;
+                border-left: solid 15px @selected;
+            }
+        }
+    }
+
 
     .doc {
         border: solid 1px #eee;
@@ -93,23 +162,14 @@
     .tabbutton.active {
         border-bottom: solid 2px #555;
     }
-
-    #hide-button {
-        position: absolute;
-        top: 10px;
-        right: 20px;
-        width: 100px;
-        text-align: right;
-        display: block;
-    }
-    #log {
+    #puton-log {
         z-index: -100;
         font-size: 13px;
         color: #555;
         text-align: right;
         position: absolute;
-        right: 20px;
-        top: 30px;
+        right: 30px;
+        top: 50px;
         width: 500px;
         overflow: auto;
     }

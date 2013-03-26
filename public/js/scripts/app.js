@@ -12,13 +12,15 @@ window.Puton = (function() {
     // Main Application
     //
     Puton.app = Backbone.View.extend({
-        id: "puton-container",
+        id: "puton",
         tagName: "div",
         initialize: function() {
         },
         start: function() {
             this.render();
-            this.logview = new v.Log();
+            this.logview = new v.Log({
+                el: this.$("#puton-log")
+            });
             this.mainPage();
         },
         render: function() {
@@ -29,7 +31,7 @@ window.Puton = (function() {
             "changeView": "changeView",
             "selectDB": "selectDB",
             "click h1": "mainPage",
-            "click #hide-button": "hide"
+            "click #puton-hide-button": "hide"
         },
         mainPage: function(e) {
             this.currentView = new v.Main({
@@ -82,8 +84,8 @@ window.Puton = (function() {
             });
         },
         events: {
-            "keydown #db": "submit",
-            "click .dbname": "selectDb"
+            "keydown #puton-db-input": "submit",
+            "click .puton-dbname": "selectDb"
         },
         render: function() {
             this.updateAllDbs();
@@ -101,7 +103,7 @@ window.Puton = (function() {
         },
         submit: function(e) {
             if (e.keyCode === 13) {
-                var db = this.$("#db").val();
+                var db = this.$("#puton-db-input").val();
 
                 // prevent empty string
                 if (db.length === 0) {
@@ -117,7 +119,7 @@ window.Puton = (function() {
     });
 
     v.Log = Backbone.View.extend({
-        el: "#log",
+        el: "#puton-log",
         initialize: function() {
             var self = this;
             self.count = 0;
