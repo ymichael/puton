@@ -1,5 +1,7 @@
-#puton-container {
+@import url(http://fonts.googleapis.com/css?family=Source+Code+Pro);
+#puton {
   padding: 20px;
+  color: #555555;
   overflow: auto;
   background-color: white;
   position: fixed;
@@ -11,137 +13,190 @@
   padding: 50px;
   font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-#puton-container h1 {
-  font-weight: 100;
-  color: black;
-}
-#puton-container .doc {
-  border: solid 1px #eee;
-  margin: 5px 0;
-  padding: 10px;
-}
-#puton-container .optionsbar {
-  text-align: right;
-  color: #444;
-}
-#puton-container .option {
-  cursor: pointer;
-}
-#puton-container .option:hover {
-  text-decoration: underline;
-}
-#puton-container .key,
-#puton-container .value {
-  font-size: 13px;
-}
-#puton-container .value {
-  color: #888;
-}
-#puton-container .code-edit {
-  width: 100%;
-  height: 80px;
-  border: 1px solid #888;
-}
-#puton-container pre.value {
-  outline: 1px solid #ccc;
-  padding: 5px;
-  margin: 5px;
-}
-#puton-container .string {
-  color: green;
-}
-#puton-container .number {
-  color: darkorange;
-}
-#puton-container .boolean {
-  color: blue;
-}
-#puton-container .docs {
-  position: relative;
-}
-#puton-container .docs #puton-revs-container {
+#puton #puton-hide-button {
   position: absolute;
-  left: 530px;
-  top: 0px;
-}
-#puton-container .docs .docs-container {
-  width: 500px;
-}
-#puton-container #puton-toolbar {
-  text-align: right;
-  margin-bottom: 20px;
-  width: 500px;
-}
-#puton-container #puton-toolbar a {
-  margin-left: 12px;
-}
-#puton-container .button {
-  cursor: pointer;
-}
-#puton-container .button:hover {
-  text-decoration: underline;
-}
-#puton-container #puton-tabbuttons {
-  text-align: left;
-}
-#puton-container .tabbutton {
-  display: inline-block;
-  margin: 10px;
-  padding: 5px 0;
-}
-#puton-container .tabbutton.active {
-  border-bottom: solid 2px #555;
-}
-#puton-container #hide-button {
-  position: absolute;
-  top: 10px;
-  right: 20px;
+  top: 30px;
+  right: 30px;
   width: 100px;
   text-align: right;
   display: block;
 }
-#puton-container #log {
+#puton h1,
+#puton h2,
+#puton h3,
+#puton h4,
+#puton h5 {
+  margin: 15px 0;
+  color: #2f2f2f;
+}
+#puton .puton-section {
+  padding: 5px 0;
+  margin: 10px 0;
+  border: none;
+}
+#puton .puton-main-input {
+  width: 700px;
+}
+#puton .puton-main-input .puton-db-label {
+  display: inline-block;
+  font: 40px 'Source Code Pro', sans-serif;
+  letter-spacing: -1px;
+  line-height: 40px;
+}
+#puton .puton-main-input #puton-db-input {
+  font: 20px 'Source Code Pro', sans-serif;
+  line-height: 40px;
+  width: 200px;
+  border: none;
+  outline: none;
+  border-bottom: solid 3px #555555;
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-top: -20px;
+  display: inline-block;
+}
+#puton .puton-dbnames {
+  margin-top: 20px;
+  margin: 0;
+  padding: 0;
+}
+#puton .puton-dbnames .puton-dbname {
+  list-style: none;
+  padding: 5px 10px;
+  margin: 15px 0;
+  font-size: 22px;
+  cursor: pointer;
+}
+#puton .puton-dbnames .puton-dbname:nth-child(odd) {
+  border-left: solid 15px #ddd;
+}
+#puton .puton-dbnames .puton-dbname:nth-child(even) {
+  border-left: solid 15px #ccc;
+}
+#puton .puton-dbnames .puton-dbname:hover {
+  color: black;
+  font-weight: bold;
+  border-left: solid 15px #a51805;
+}
+#puton .doc {
+  border: solid 1px #eee;
+  margin: 5px 0;
+  padding: 10px;
+}
+#puton .optionsbar {
+  text-align: right;
+  color: #444;
+}
+#puton .option {
+  cursor: pointer;
+}
+#puton .option:hover {
+  text-decoration: underline;
+}
+#puton .key,
+#puton .value {
+  font-size: 13px;
+}
+#puton .value {
+  color: #888;
+}
+#puton .code-edit {
+  width: 100%;
+  height: 80px;
+  border: 1px solid #888;
+}
+#puton pre.value {
+  outline: 1px solid #ccc;
+  padding: 5px;
+  margin: 5px;
+}
+#puton .string {
+  color: green;
+}
+#puton .number {
+  color: darkorange;
+}
+#puton .boolean {
+  color: blue;
+}
+#puton .docs {
+  position: relative;
+}
+#puton .docs #puton-revs-container {
+  position: absolute;
+  left: 530px;
+  top: 0px;
+}
+#puton .docs .docs-container {
+  width: 500px;
+}
+#puton #puton-toolbar {
+  text-align: right;
+  margin-bottom: 20px;
+  width: 500px;
+}
+#puton #puton-toolbar a {
+  margin-left: 12px;
+}
+#puton .button {
+  cursor: pointer;
+}
+#puton .button:hover {
+  text-decoration: underline;
+}
+#puton #puton-tabbuttons {
+  text-align: left;
+}
+#puton .tabbutton {
+  display: inline-block;
+  margin: 10px;
+  padding: 5px 0;
+}
+#puton .tabbutton.active {
+  border-bottom: solid 2px #555;
+}
+#puton #puton-log {
   z-index: -100;
   font-size: 13px;
   color: #555;
   text-align: right;
   position: absolute;
-  right: 20px;
-  top: 30px;
+  right: 30px;
+  top: 50px;
   width: 500px;
   overflow: auto;
 }
-#puton-container .log-info {
+#puton .log-info {
   color: #444;
 }
-#puton-container .log-log {
+#puton .log-log {
   color: #888;
 }
-#puton-container .log-error {
+#puton .log-error {
   color: #933;
   font-size: 1.2em;
 }
-#puton-container ul.jqtree-tree {
+#puton ul.jqtree-tree {
   margin-left: 12px;
 }
-#puton-container ul.jqtree-tree,
-#puton-container ul.jqtree-tree ul.jqtree_common {
+#puton ul.jqtree-tree,
+#puton ul.jqtree-tree ul.jqtree_common {
   list-style: none outside;
   margin-bottom: 0;
   padding: 0;
 }
-#puton-container ul.jqtree-tree ul.jqtree_common {
+#puton ul.jqtree-tree ul.jqtree_common {
   display: block;
   margin-left: 12px;
   margin-right: 0;
 }
-#puton-container ul.jqtree-tree li.jqtree-closed > ul.jqtree_common {
+#puton ul.jqtree-tree li.jqtree-closed > ul.jqtree_common {
   display: none;
 }
-#puton-container ul.jqtree-tree li.jqtree_common {
+#puton ul.jqtree-tree li.jqtree_common {
   clear: both;
 }
-#puton-container ul.jqtree-tree .jqtree-toggler {
+#puton ul.jqtree-tree .jqtree-toggler {
   display: block;
   position: absolute;
   left: -1.5em;
@@ -157,51 +212,51 @@
   border-bottom: none;
   color: #333;
 }
-#puton-container .log-error ul.jqtree-tree .jqtree-toggler {
+#puton .log-error ul.jqtree-tree .jqtree-toggler {
   color: red;
 }
-#puton-container ul.jqtree-tree div {
+#puton ul.jqtree-tree div {
   text-align: left;
 }
-#puton-container ul.jqtree-tree .jqtree-toggler:hover {
+#puton ul.jqtree-tree .jqtree-toggler:hover {
   color: #000;
 }
-#puton-container ul.jqtree-tree div {
+#puton ul.jqtree-tree div {
   cursor: pointer;
 }
-#puton-container ul.jqtree-tree .jqtree-title {
+#puton ul.jqtree-tree .jqtree-title {
   /*color: #1C4257;*/
 
   vertical-align: middle;
 }
-#puton-container ul.jqtree-tree li.jqtree-folder {
+#puton ul.jqtree-tree li.jqtree-folder {
   margin-bottom: 4px;
 }
-#puton-container ul.jqtree-tree li.jqtree-folder.jqtree-closed {
+#puton ul.jqtree-tree li.jqtree-folder.jqtree-closed {
   margin-bottom: 1px;
 }
-#puton-container ul.jqtree-tree li.jqtree-folder .jqtree-title {
+#puton ul.jqtree-tree li.jqtree-folder .jqtree-title {
   margin-left: 0;
 }
-#puton-container ul.jqtree-tree .jqtree-toggler.jqtree-closed {
+#puton ul.jqtree-tree .jqtree-toggler.jqtree-closed {
   background-position: 0 0;
 }
-#puton-container span.jqtree-dragging {
+#puton span.jqtree-dragging {
   color: #fff;
   background: #000;
   opacity: 0.6;
   cursor: pointer;
   padding: 2px 8px;
 }
-#puton-container ul.jqtree-tree li.jqtree-ghost {
+#puton ul.jqtree-tree li.jqtree-ghost {
   position: relative;
   z-index: 10;
   margin-right: 10px;
 }
-#puton-container ul.jqtree-tree li.jqtree-ghost span {
+#puton ul.jqtree-tree li.jqtree-ghost span {
   display: block;
 }
-#puton-container ul.jqtree-tree li.jqtree-ghost span.jqtree-circle {
+#puton ul.jqtree-tree li.jqtree-ghost span.jqtree-circle {
   background-image: url(jqtree-circle.png);
   background-repeat: no-repeat;
   height: 8px;
@@ -210,7 +265,7 @@
   top: -4px;
   left: 2px;
 }
-#puton-container ul.jqtree-tree li.jqtree-ghost span.jqtree-line {
+#puton ul.jqtree-tree li.jqtree-ghost span.jqtree-line {
   background-color: #0000ff;
   height: 2px;
   padding: 0;
@@ -219,10 +274,10 @@
   left: 10px;
   width: 100%;
 }
-#puton-container ul.jqtree-tree li.jqtree-ghost.jqtree-inside {
+#puton ul.jqtree-tree li.jqtree-ghost.jqtree-inside {
   margin-left: 48px;
 }
-#puton-container ul.jqtree-tree span.jqtree-border {
+#puton ul.jqtree-tree span.jqtree-border {
   position: absolute;
   display: block;
   left: -2px;
@@ -233,7 +288,7 @@
   border-radius: 6px;
   margin: 0;
 }
-#puton-container ul.jqtree-tree div {
+#puton ul.jqtree-tree div {
   width: 100%;
   /* todo: why is this in here? */
 
@@ -242,8 +297,8 @@
 
   position: relative;
 }
-#puton-container ul.jqtree-tree li.jqtree-selected > div,
-#puton-container ul.jqtree-tree li.jqtree-selected > div:hover {
+#puton ul.jqtree-tree li.jqtree-selected > div,
+#puton ul.jqtree-tree li.jqtree-selected > div:hover {
   background-color: #97BDD6;
   background: -webkit-gradient(linear, left top, left bottom, from(#bee0f5), to(#89afca));
   background: -moz-linear-gradient(top, #bee0f5, #89afca);
@@ -251,6 +306,6 @@
   background: -o-linear-gradient(top, #bee0f5, #89afca);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
-#puton-container ul.jqtree-tree .jqtree-moving > div .jqtree-title {
+#puton ul.jqtree-tree .jqtree-moving > div .jqtree-title {
   outline: dashed 1px #0000ff;
 }

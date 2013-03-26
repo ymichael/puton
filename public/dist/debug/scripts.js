@@ -7,17 +7,28 @@ tmpl.app = "\
 <h1>Puton</h1>\
 <div id='puton-main'>\
 </div>\
-<a href='#' id='hide-button'>Close</a>\
-<div id='log'></div>";
+<a href='#' id='puton-hide-button'>Close</a>\
+<div id='puton-log'></div>";
 
 tmpl.mainView = "\
-<b><label for='db'>db name: </label></b>\
-<input type='text' id='db'/>\
-<ul>\
-    <%  _.each(allDbs, function(db) { %>\
-        <li class='dbname'><%= db %></li>\
-    <% }) %>\
-</ul>";
+\
+<div class='puton-section'>\
+    <h2>Open a Pouch:</h2>\
+    <div class='puton-main-input'>\
+        <label class='puton-db-label' for='puton-db-input'>Pouch(</label>\
+        <input type='text' id='puton-db-input'/>\
+        <label class='puton-db-label' for='puton-db-input'>);</label>\
+    </div>\
+</div>\
+\
+<div class='puton-section'>\
+    <h2>Existing Pouches:</h2>\
+    <ul class='puton-dbnames'>\
+        <%  _.each(allDbs, function(db) { %>\
+            <li class='puton-dbname'><%= db %></li>\
+        <% }) %>\
+    </ul>\
+</div>";
 
 tmpl.log = "\
 <p class='log log-<%- type %>'>\
@@ -146,13 +157,15 @@ window.Puton = (function() {
     // Main Application
     //
     Puton.app = Backbone.View.extend({
-        id: "puton-container",
+        id: "puton",
         tagName: "div",
         initialize: function() {
         },
         start: function() {
             this.render();
-            this.logview = new v.Log();
+            this.logview = new v.Log({
+                el: this.$("#puton-log")
+            });
             this.mainPage();
         },
         render: function() {
@@ -163,7 +176,7 @@ window.Puton = (function() {
             "changeView": "changeView",
             "selectDB": "selectDB",
             "click h1": "mainPage",
-            "click #hide-button": "hide"
+            "click #puton-hide-button": "hide"
         },
         mainPage: function(e) {
             this.currentView = new v.Main({
@@ -216,8 +229,8 @@ window.Puton = (function() {
             });
         },
         events: {
-            "keydown #db": "submit",
-            "click .dbname": "selectDb"
+            "keydown #puton-db-input": "submit",
+            "click .puton-dbname": "selectDb"
         },
         render: function() {
             this.updateAllDbs();
@@ -235,7 +248,7 @@ window.Puton = (function() {
         },
         submit: function(e) {
             if (e.keyCode === 13) {
-                var db = this.$("#db").val();
+                var db = this.$("#puton-db-input").val();
 
                 // prevent empty string
                 if (db.length === 0) {
@@ -251,7 +264,7 @@ window.Puton = (function() {
     });
 
     v.Log = Backbone.View.extend({
-        el: "#log",
+        el: "#puton-log",
         initialize: function() {
             var self = this;
             self.count = 0;
