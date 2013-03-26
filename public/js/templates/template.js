@@ -27,7 +27,9 @@ tmpl.log = "\
 
 tmpl.doc_full = "\
 <div class='optionsbar'>\
-    <a class='option revoption'>revs</a>\
+    <a class='option revtreeoption'>rev-tree</a>\
+    &nbsp;|&nbsp;\
+    <a class='option revoption'>rev-list</a>\
     &nbsp;|&nbsp;\
     <a class='option editoption'>edit</a>\
     &nbsp;|&nbsp;\

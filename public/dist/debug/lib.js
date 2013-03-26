@@ -21200,6 +21200,7 @@ Pouch.replicate = function(src, target, opts, callback) {
 /*jshint strict: false */
 /*global request: true, Buffer: true, escape: true, $:true */
 /*global extend: true, Crypto: true */
+/*global chrome*/
 
 // Pretty dumb name for a function, just wraps callback calls so we dont
 // to if (callback) callback() everywhere
@@ -21431,20 +21432,20 @@ var collectLeaves = function(revs) {
   return leaves;
 };
 
-var collectConflicts = function(revs, deletions) {
-  // Remove all deleted leaves
-  var leaves = collectLeaves(revs);
-  for(var i = 0; i < leaves.length; i++){
-    var leaf = leaves.shift();
+// returns all conflicts that is leaves such that
+// 1. are not deleted and
+// 2. are different than winning revision
+var collectConflicts = function(metadata) {
+  var win = Pouch.merge.winningRev(metadata);
+  var leaves = collectLeaves(metadata.rev_tree);
+  var conflicts = [];
+  leaves.forEach(function(leaf) {
     var rev = leaf.rev.split("-")[1]; 
-    if(deletions && !deletions[rev]){
-      leaves.push(leaf);
+    if ((!metadata.deletions || !metadata.deletions[rev]) && leaf.rev !== win) {
+      conflicts.push(leaf.rev);
     } 
-  }
-
-  // First is current rev
-  leaves.shift();
-  return leaves.map(function(x) { return x.rev; });
+  });
+  return conflicts;
 };
 
 // returns first element of arr satisfying callback predicate
@@ -21485,31 +21486,9 @@ var rootToLeaf = function(tree) {
   return paths;
 };
 
-// Basic wrapper for localStorage
-var win = this;
-var localJSON = (function(){
-  if (!win.localStorage) {
-    return false;
-  }
-  return {
-    set: function(prop, val) {
-      localStorage.setItem(prop, JSON.stringify(val));
-    },
-    get: function(prop, def) {
-      try {
-        if (localStorage.getItem(prop) === null) {
-          return def;
-        }
-        return JSON.parse((localStorage.getItem(prop) || 'false'));
-      } catch(err) {
-        return def;
-      }
-    },
-    remove: function(prop) {
-      localStorage.removeItem(prop);
-    }
-  };
-})();
+var isChromeApp = function(){
+  return (typeof chrome !== "undefined" && typeof chrome.storage !== "undefined" && typeof chrome.storage.local !== "undefined");
+};
 
 if (typeof module !== 'undefined' && module.exports) {
   // use node.js's crypto library instead of the Crypto object created by deps/uuid.js
@@ -21550,7 +21529,8 @@ if (typeof module !== 'undefined' && module.exports) {
     extend: extend,
     ajax: ajax,
     traverseRevTree: traverseRevTree,
-    rootToLeaf: rootToLeaf
+    rootToLeaf: rootToLeaf,
+    isChromeApp: isChromeApp
   };
 }
 
@@ -21559,9 +21539,16 @@ var Changes = function() {
   var api = {};
   var listeners = {};
 
-  window.addEventListener("storage", function(e) {
-    api.notify(e.key);
-  });
+  if (isChromeApp()){
+    chrome.storage.onChanged.addListener(function(e){
+      api.notify(e.db_name.newValue);//object only has oldValue, newValue members
+    });
+  }
+  else {
+    window.addEventListener("storage", function(e) {
+      api.notify(e.key);
+    });
+  }
 
   api.addListener = function(db_name, id, db, opts) {
     if (!listeners[db_name]) {
@@ -21579,6 +21566,16 @@ var Changes = function() {
 
   api.clearListeners = function(db_name) {
     delete listeners[db_name];
+  };
+
+  api.notifyLocalWindows = function(db_name){
+    //do a useless change on a storage thing
+    //in order to get other windows's listeners to activate
+    if (!isChromeApp()){
+      localStorage[db_name] = (localStorage[db_name] === "a") ? "b" : "a";
+    } else {
+      chrome.storage.local.set({db_name: db_name});
+    }
   };
 
   api.notify = function(db_name) {
@@ -21608,6 +21605,7 @@ var Changes = function() {
 
 
 /*globals yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
+/*globals collectConflicts: false, arrayFirst: false, rootToLeaf: false */
 
 "use strict";
 
@@ -21777,7 +21775,10 @@ var PouchAdapter = function(opts, callback) {
   // by compacting we mean removing all revisions which
   // are not leaves in revision tree
   var compactDocument = function(docId, callback) {
-    customApi._getRevisionTree(docId, function(rev_tree){
+    customApi._getRevisionTree(docId, function(err, rev_tree){
+      if (err) {
+        return call(callback);
+      }
       var nonLeaves = [];
       traverseRevTree(rev_tree, function(isLeaf, pos, id) {
         var rev = pos + '-' + id;
@@ -21820,41 +21821,131 @@ var PouchAdapter = function(opts, callback) {
       opts = {};
     }
 
+    var leaves = [];
+    function finishOpenRevs() {
+      var result = [];
+      var count = leaves.length;
+      if (!count) {
+        return call(callback, null, result);
+      }
+      // order with open_revs is unspecified
+      leaves.forEach(function(leaf){
+        api.get(id, {rev: leaf}, function(err, doc){
+          if (!err) {
+            result.push({ok: doc});
+          } else {
+            result.push({missing: leaf});
+          }
+          count--;
+          if(!count) {
+            call(callback, null, result);
+          }
+        });
+      });
+    }
+
     if (opts.open_revs) {
-      customApi._getRevisionTree(id, function(rev_tree){
-        var leaves = [];
-        if (opts.open_revs === "all") {
+      if (opts.open_revs === "all") {
+        customApi._getRevisionTree(id, function(err, rev_tree){
+          if (err) {
+            // if there's no such document we should treat this
+            // situation the same way as if revision tree was empty
+            rev_tree = [];
+          }
           leaves = collectLeaves(rev_tree).map(function(leaf){
             return leaf.rev;
           });
-        } else {
-          leaves = opts.open_revs; // should be some validation here
-        }
-        var result = [];
-        var count = leaves.length;
-        leaves.forEach(function(leaf){
-          api.get(id, {rev: leaf}, function(err, doc){
-            if (!err) {
-              result.push({ok: doc});
-            } else {
-              result.push({missing: leaf});
-            }
-            count--;
-            if(!count) {
-              call(callback, null, result);
-            }
-          });
+          finishOpenRevs();
         });
-      });
-      return;
+      } else {
+        if (Array.isArray(opts.open_revs)) {
+          leaves = opts.open_revs;
+          for (var i = 0; i < leaves.length; i++) {
+            var l = leaves[i];
+            // looks like it's the only thing couchdb checks
+            if (!(typeof(l) === "string" && /^\d+-/.test(l))) {
+              return call(callback, extend({}, Pouch.Errors.BAD_REQUEST, {
+                reason: "Invalid rev format"
+              }));
+            }
+          }
+          finishOpenRevs();
+        } else {
+          return call(callback, extend({}, Pouch.Errors.UNKNOWN_ERROR, {
+            reason: 'function_clause'
+          }));
+        }
+      }
+      return; // open_revs does not like other options
     }
 
     id = parseDocId(id);
     if (id.attachmentId !== '') {
       return customApi.getAttachment(id, callback);
     }
-    return customApi._get(id, opts, callback);
+    return customApi._get(id, opts, function(result, metadata) {
+      if ('error' in result) {
+        return call(callback, result);
+      }
 
+      var doc = result;
+      function finish() {
+        call(callback, null, doc);
+      }
+
+      if (opts.conflicts) {
+        var conflicts = collectConflicts(metadata);
+        if (conflicts.length) {
+          doc._conflicts = conflicts;
+        }
+      }
+
+      if (opts.revs || opts.revs_info) {
+        var path = arrayFirst(rootToLeaf(metadata.rev_tree), function(arr) {
+          return arr.ids.indexOf(doc._rev.split('-')[1]) !== -1;
+        });
+        path.ids.splice(path.ids.indexOf(doc._rev.split('-')[1]) + 1);
+        path.ids.reverse();
+
+        if (opts.revs) {
+          doc._revisions = {
+            start: (path.pos + path.ids.length) - 1,
+            ids: path.ids
+          };
+        }
+        if (opts.revs_info) {
+          // TODO: it could be slow to test status like this
+          var count = path.ids.length;
+          var pos = path.pos + path.ids.length - 1;
+          doc._revs_info = [];
+
+          path.ids.forEach(function(hash) {
+            var rev = pos + '-' + hash;
+            var info = {
+              rev: rev,
+              status: "available"
+            };
+            pos--;
+            doc._revs_info.push(info);
+
+            api.get(id.docId, {rev: rev}, function(err, ok) {
+              if (err) {
+                info.status = "missing";
+              }
+              count--;
+              if (!count) {
+                finish();
+              }
+            });
+          });
+        } else {
+          finish();
+        }
+      } else {
+        finish();
+      }
+      
+    });
   };
 
   api.getAttachment = function(id, opts, callback) {
@@ -23059,7 +23150,7 @@ var IdbPouch = function(opts, callback) {
         }
 
         IdbPouch.Changes.notify(name);
-        localStorage[name] = (localStorage[name] === "a") ? "b" : "a";
+        IdbPouch.Changes.notifyLocalWindows(name);
       });
       call(callback, null, aresults);
     }
@@ -23263,20 +23354,15 @@ var IdbPouch = function(opts, callback) {
   // First we look up the metadata in the ids database, then we fetch the
   // current revision(s) from the by sequence store
   api._get = function idb_get(id, opts, callback) {
-
     var result;
+    var metadata;
     var txn = idb.transaction([DOC_STORE, BY_SEQ_STORE, ATTACH_STORE], 'readonly');
     txn.oncomplete = function() {
-      if ('error' in result) {
-        call(callback, result);
-      } else {
-        call(callback, null, result);
-      }
+      call(callback, result, metadata);
     };
 
-    var leaves;
     txn.objectStore(DOC_STORE).get(id.docId).onsuccess = function(e) {
-      var metadata = e.target.result;
+      metadata = e.target.result;
       // we can determine the result here if:
       // 1. there is no such document
       // 2. the document is deleted and we don't ask about specific rev
@@ -23300,27 +23386,6 @@ var IdbPouch = function(opts, callback) {
         if (!doc) {
           result = Pouch.Errors.MISSING_DOC;
           return;
-        }
-        if (opts.revs) { // FIXME: if rev is given it should return ids from root to rev (don't include newer)
-          var path = arrayFirst(rootToLeaf(metadata.rev_tree), function(arr) {
-            return arr.ids.indexOf(doc._rev.split('-')[1]) !== -1;
-          });
-          path.ids.reverse();
-          doc._revisions = {
-            start: (path.pos + path.ids.length) - 1,
-            ids: path.ids
-          };
-        }
-        if (opts.revs_info) { // FIXME: this returns revs for whole tree and should return only branch for winner
-          doc._revs_info = metadata.rev_tree.reduce(function(prev, current) {
-            return prev.concat(collectRevs(current));
-          }, []);
-        }
-        if (opts.conflicts) {
-          var conflicts = collectConflicts(metadata.rev_tree, metadata.deletions);
-          if (conflicts.length) {
-            doc._conflicts = conflicts;
-          }
         }
         if (opts.attachments && doc._attachments) {
           var attachments = Object.keys(doc._attachments);
@@ -23464,7 +23529,7 @@ var IdbPouch = function(opts, callback) {
           doc.doc = data;
           doc.doc._rev = Pouch.merge.winningRev(metadata);
           if (opts.conflicts) {
-            doc.doc._conflicts = collectConflicts(metadata.rev_tree, metadata.deletions);
+            doc.doc._conflicts = collectConflicts(metadata);
           }
         }
         if ('keys' in opts) {
@@ -23626,7 +23691,7 @@ var IdbPouch = function(opts, callback) {
             change.deleted = true;
           }
           if (opts.conflicts) {
-            change.doc._conflicts = collectConflicts(metadata.rev_tree, metadata.deletions);
+            change.doc._conflicts = collectConflicts(metadata);
           }
 
           // Dedupe the changes feed
@@ -23678,7 +23743,11 @@ var IdbPouch = function(opts, callback) {
     var req = txn.objectStore(DOC_STORE).get(docId);
     req.onsuccess = function (event) {
       var doc = event.target.result;
-      callback(doc.rev_tree);
+      if (!doc) {
+        call(callback, Pouch.Errors.MISSING_DOC);
+      } else {
+        call(callback, null, doc.rev_tree);
+      }
     };
   };
 
@@ -23757,6 +23826,7 @@ var webSqlPouch = function(opts, callback) {
 
   var api = {};
   var update_seq = 0;
+  var instanceId = null;
   var name = opts.name;
 
   var db = openDatabase(name, POUCH_VERSION, name, POUCH_SIZE);
@@ -23770,7 +23840,7 @@ var webSqlPouch = function(opts, callback) {
 
   db.transaction(function (tx) {
     var meta = 'CREATE TABLE IF NOT EXISTS ' + META_STORE +
-      ' (update_seq)';
+      ' (update_seq, dbid)';
     var attach = 'CREATE TABLE IF NOT EXISTS ' + ATTACH_STORE +
       ' (digest, json, body BLOB)';
     var doc = 'CREATE TABLE IF NOT EXISTS ' + DOC_STORE +
@@ -23783,14 +23853,25 @@ var webSqlPouch = function(opts, callback) {
     tx.executeSql(seq);
     tx.executeSql(meta);
 
-    var sql = 'SELECT update_seq FROM ' + META_STORE;
-    tx.executeSql(sql, [], function(tx, result) {
+    var updateseq = 'SELECT update_seq FROM ' + META_STORE;
+    tx.executeSql(updateseq, [], function(tx, result) {
       if (!result.rows.length) {
         var initSeq = 'INSERT INTO ' + META_STORE + ' (update_seq) VALUES (?)';
+        var newId = Math.uuid();
         tx.executeSql(initSeq, [0]);
         return;
       }
       update_seq = result.rows.item(0).update_seq;
+    });
+    var dbid = 'SELECT dbid FROM ' + META_STORE;
+    tx.executeSql(dbid, [], function(tx, result) {
+      if (!result.rows.length) {
+        var initDb = 'INSERT INTO ' + META_STORE + ' (dbid) VALUES (?)';
+        var newId = Math.uuid();
+        tx.executeSql(initDb, [newId]);
+        return;
+      }
+      instanceId = result.rows.item(0).dbid;
     });
   }, unknownError(callback), dbCreated);
 
@@ -23799,12 +23880,7 @@ var webSqlPouch = function(opts, callback) {
   };
 
   api.id = function() {
-    var id = localJSON.get(name + '_id', null);
-    if (id === null) {
-      id = Math.uuid();
-      localJSON.set(name + '_id', id);
-    }
-    return id;
+    return instanceId;
   };
 
   api._info = function(callback) {
@@ -23892,7 +23968,7 @@ var webSqlPouch = function(opts, callback) {
         var sql = 'UPDATE ' + META_STORE + ' SET update_seq=?';
         tx.executeSql(sql, [update_seq], function() {
           webSqlPouch.Changes.notify(name);
-          localStorage[name] = (localStorage[name] === "a") ? "b" : "a";
+          webSqlPouch.Changes.notifyLocalWindows(name);
         });
       });
       call(callback, null, aresults);
@@ -24109,6 +24185,7 @@ var webSqlPouch = function(opts, callback) {
 
   api._get = function(id, opts, callback) {
     var result;
+    var metadata;
     db.transaction(function(tx) {
       var sql = 'SELECT * FROM ' + DOC_STORE + ' WHERE id=?';
       tx.executeSql(sql, [id.docId], function(tx, results) {
@@ -24116,7 +24193,7 @@ var webSqlPouch = function(opts, callback) {
           result = Pouch.Errors.MISSING_DOC;
           return;
         }
-        var metadata = JSON.parse(results.rows.item(0).json);
+        metadata = JSON.parse(results.rows.item(0).json);
         if (isDeleted(metadata) && !opts.rev) {
           result = extend({}, Pouch.Errors.MISSING_DOC, {reason:"deleted"});
           return;
@@ -24131,30 +24208,6 @@ var webSqlPouch = function(opts, callback) {
             return;
           }
           var doc = JSON.parse(results.rows.item(0).json);
-
-          if (opts.revs) {
-            var path = arrayFirst(rootToLeaf(metadata.rev_tree), function(arr) {
-              return arr.ids.indexOf(doc._rev.split('-')[1]) !== -1;
-            });
-            path.ids.reverse();
-            doc._revisions = {
-              start: (path.pos + path.ids.length) - 1,
-              ids: path.ids
-            };
-          }
-
-          if (opts.revs_info) {
-            doc._revs_info = metadata.rev_tree.reduce(function(prev, current) {
-              return prev.concat(collectRevs(current));
-            }, []);
-          }
-
-          if (opts.conflicts) {
-            var conflicts = collectConflicts(metadata.rev_tree, metadata.deletions);
-            if (conflicts.length) {
-              doc._conflicts = conflicts;
-            }
-          }
 
           if (opts.attachments && doc._attachments) {
             var attachments = Object.keys(doc._attachments);
@@ -24178,11 +24231,7 @@ var webSqlPouch = function(opts, callback) {
         });
       });
     }, unknownError(callback), function () {
-      if ('error' in result) {
-        call(callback, result);
-      } else {
-        call(callback, null, result);
-      }
+      call(callback, result, metadata);
     });
   };
 
@@ -24227,7 +24276,7 @@ var webSqlPouch = function(opts, callback) {
               doc.doc = data;
               doc.doc._rev = Pouch.merge.winningRev(metadata);
               if (opts.conflicts) {
-                doc.doc._conflicts = collectConflicts(metadata.rev_tree, metadata.deletions);
+                doc.doc._conflicts = collectConflicts(metadata);
               }
             }
             if ('keys' in opts) {
@@ -24334,7 +24383,7 @@ var webSqlPouch = function(opts, callback) {
                 change.deleted = true;
               }
               if (opts.conflicts) {
-                change.doc._conflicts = collectConflicts(metadata.rev_tree, metadata.deletions);
+                change.doc._conflicts = collectConflicts(metadata);
               }
               results.push(change);
             }
@@ -24400,8 +24449,12 @@ var webSqlPouch = function(opts, callback) {
     db.transaction(function (tx) {
       var sql = 'SELECT json AS metadata FROM ' + DOC_STORE + ' WHERE id = ?';
       tx.executeSql(sql, [docId], function(tx, result) {
-        var data = JSON.parse(result.rows.item(0).metadata);
-        callback(data.rev_tree);
+        if (!result.rows.length) {
+          call(callback, Pouch.Errors.MISSING_DOC);
+        } else {
+          var data = JSON.parse(result.rows.item(0).metadata);
+          call(callback, null, data.rev_tree);
+        }
       });
     });
   };
@@ -24425,7 +24478,6 @@ webSqlPouch.valid = function() {
 
 webSqlPouch.destroy = function(name, callback) {
   var db = openDatabase(name, POUCH_VERSION, name, POUCH_SIZE);
-  localJSON.set(name + '_id', null);
   db.transaction(function (tx) {
     tx.executeSql('DROP TABLE IF EXISTS ' + DOC_STORE, []);
     tx.executeSql('DROP TABLE IF EXISTS ' + BY_SEQ_STORE, []);
@@ -24681,6 +24733,380 @@ MapReduce._delete = function() { };
 Pouch.plugin('mapreduce', MapReduce);
 
  })(this);
+"use strict";
+var visualizeRevTree = function(db) {
+  var head = document.getElementsByTagName("head")[0];
+  if (head) {
+    var style = [
+      ".visualizeRevTree{position: relative}",
+      ".visualizeRevTree * {margin: 0; padding: 0; font-size: 10px}",
+      ".visualizeRevTree line{stroke: #000; stroke-width: .10}",
+      ".visualizeRevTree div{position: relative; }",
+      ".visualizeRevTree circle{stroke: #000; stroke-width: .10}",
+      ".visualizeRevTree circle.leaf{fill: green}",
+      ".visualizeRevTree circle.winner{fill: red}",
+      ".visualizeRevTree circle.deleted{fill: grey}",
+      ".visualizeRevTree circle{transition: .3s}",
+      ".visualizeRevTree circle.selected{stroke-width: .3}",
+      ".visualizeRevTree div.box{background: #ddd; border: 1px solid #bbb; border-radius: 7px; padding: 7px; position: absolute;}",
+      ".visualizeRevTree .editor {width: 220px}",
+      ".visualizeRevTree .editor dt{width: 100px; height: 15px; float: left;}",
+      ".visualizeRevTree .editor dd{width: 100px; height: 15px; float: left;}",
+      ".visualizeRevTree .editor input{width: 100%; height: 100%}"
+    ];
+    var styleNode = document.createElement("style");
+    styleNode.appendChild(document.createTextNode(style.join("\n")));
+    head.appendChild(styleNode);
+  }
+
+
+  var grid = 10;
+  var scale = 7;
+  var r = 1;
+
+
+  // see: pouch.utils.js
+  var traverseRevTree = function(revs, callback) {
+    var toVisit = [];
+
+
+    revs.forEach(function(tree) {
+      toVisit.push({pos: tree.pos, ids: tree.ids});
+    });
+
+
+    while (toVisit.length > 0) {
+      var node = toVisit.pop(),
+      pos = node.pos,
+      tree = node.ids;
+      var newCtx = callback(tree[1].length === 0, pos, tree[0], node.ctx);
+      tree[1].forEach(function(branch) {
+        toVisit.push({pos: pos+1, ids: branch, ctx: newCtx});
+      });
+    }
+  };
+  var revisionsToPath = function(revisions){
+    var tree = [revisions.ids[0], []];
+    var i, rev;
+    for(i = 1; i < revisions.ids.length; i++){
+      rev = revisions.ids[i];
+      tree = [rev, [tree]];
+    }
+    return {
+      pos: revisions.start - revisions.ids.length + 1,
+      ids: tree
+    };
+  };
+  // returns minimal number i such that prefixes of lenght i are unique
+  // ex: ["xyaaa", "xybbb", "xybccc"] -> 4
+  var minUniqueLength = function(arr, len){
+    function strCommon(a, b){
+      if (a === b) return a.length;
+      var i = 0;
+      while(++i){
+        if(a[i - 1] !== b[i - 1]) return i;
+      }
+    }
+    var array = arr.slice(0);
+    var com = 1;
+    array.sort();
+    for (var i = 1; i < array.length; i++){
+      com = Math.max(com, strCommon(array[i], array[i - 1]));
+    }
+    return com;
+  };
+
+
+  var putAfter = function(doc, prevRev, callback){
+    var newDoc = JSON.parse(JSON.stringify(doc));
+    newDoc._revisions = {
+      start: +newDoc._rev.split('-')[0],
+      ids: [
+        newDoc._rev.split('-')[1],
+        prevRev.split('-')[1]
+      ]
+    };
+    db.put(newDoc, {new_edits: false}, callback);
+  };
+
+
+  var visualize = function(docId, opts, callback) {
+    if (typeof opts === 'function') {
+      callback = opts;
+    }
+    var circ = function(x, y, r, isLeaf, isDeleted, isWinner) {
+      var el = document.createElementNS(svgNS, "circle");
+      el.setAttributeNS(null, "cx", x);
+      el.setAttributeNS(null, "cy", y);
+      el.setAttributeNS(null, "r", r);
+      if (isLeaf) {
+        el.classList.add("leaf");
+      }
+      if (isWinner) {
+        el.classList.add("winner");
+      }
+      if (isDeleted) {
+        el.classList.add("deleted");
+      }
+      circlesBox.appendChild(el);
+      return el;
+    };
+    var line = function(x1, y1, x2, y2) {
+      var el = document.createElementNS(svgNS, "line");
+      el.setAttributeNS(null, "x1", x1);
+      el.setAttributeNS(null, "y1", y1);
+      el.setAttributeNS(null, "x2", x2);
+      el.setAttributeNS(null, "y2", y2);
+      linesBox.appendChild(el);
+      return el;
+    };
+    var svgNS = "http://www.w3.org/2000/svg";
+    var box = document.createElement('div');
+    box.className = "visualizeRevTree";
+    var svg = document.createElementNS(svgNS, "svg");
+    box.appendChild(svg);
+    var linesBox = document.createElementNS(svgNS, "g");
+    svg.appendChild(linesBox);
+    var circlesBox = document.createElementNS(svgNS, "g");
+    svg.appendChild(circlesBox);
+    var textsBox = document.createElementNS(svgNS, "g");
+    svg.appendChild(textsBox);
+
+
+    // first we need to download all data using public API
+    var tree = [];
+    var deleted = {};
+    var winner;
+    var allRevs = [];
+
+
+    // consider using revs=true&open_revs=all to get everything in one query
+    db.get(docId, function(err, doc){ // get winning revision here
+      if (err) {
+        callback(err);
+        return;
+      }
+      winner = doc._rev;
+      db.get(docId, {open_revs: "all"}, function(err, results){ // get all leaves
+        if(err){
+          callback(err);
+          return;
+        }
+        var len = results.length;
+        results.forEach(function(res){
+          if (res.ok._deleted) {
+            deleted[res.ok._rev] = true;
+          }
+          db.get(docId, {rev: res.ok._rev, revs: true}, function(err, res){ // get the whole branch of current leaf
+            res._revisions.ids.forEach(function(rev){
+              if (allRevs.indexOf(rev) === -1) {
+                allRevs.push(rev);
+              }
+            });
+            var path = revisionsToPath(res._revisions);
+            tree = Pouch.merge(tree, path).tree;
+            len--;
+            if (len === 0){
+              draw(tree);
+            }
+          });
+        });
+      });
+    });
+
+
+    var focusedInput;
+    function input(text){
+      var div = document.createElement('div');
+      div.classList.add('input');
+      var span = document.createElement('span');
+      div.appendChild(span);
+      span.appendChild(document.createTextNode(text));
+      var clicked = false;
+      var input;
+
+
+      div.ondblclick = function() {
+        if(clicked){
+          input.focus();
+          return;
+        }
+        clicked = true;
+        div.removeChild(span);
+        input = document.createElement('input');
+        div.appendChild(input);
+        input.value = text;
+        input.focus();
+
+
+        input.onkeydown = function(e){
+          if(e.keyCode === 9 && !e.shiftKey){
+            var next;
+            if(next = this.parentNode.parentNode.nextSibling){
+              next.firstChild.ondblclick();
+              e.preventDefault();
+            }
+          }
+        };
+      };
+      div.getValue = function() {
+        return clicked ? input.value : text;
+      };
+      return div;
+    }
+
+
+    function node(x, y, rev, isLeaf, isDeleted, isWinner, shortDescLen){
+        var nodeEl = circ(x, y, r, isLeaf, rev in deleted, rev === winner);
+        var pos = rev.split('-')[0];
+        var id = rev.split('-')[1];
+        var opened = false;
+
+
+        var click = function() {
+          if (opened) return;
+          opened = true;
+
+
+          var div = document.createElement('div');
+          div.classList.add("editor");
+          div.classList.add("box");
+          div.style.left = scale * (x + 3 * r) + "px";
+          div.style.top = scale * (y - 2) + "px";
+          div.style.zIndex = 1000;
+          box.appendChild(div);
+
+
+          var close = function() {
+            div.parentNode.removeChild(div);
+            opened = false;
+          };
+
+
+          db.get(docId, {rev: rev}, function(err, doc){
+            var dl = document.createElement('dl');
+            var keys = [];
+            var addRow = function(key, value){
+              var key = input(key);
+              keys.push(key);
+              var dt = document.createElement('dt');
+              dt.appendChild(key);
+              dl.appendChild(dt);
+              var value = input(value);
+              key.valueInput = value;
+              var dd = document.createElement('dd');
+              dd.appendChild(value);
+              dl.appendChild(dd);
+            };
+            for (var i in doc) {
+              if (doc.hasOwnProperty(i)) {
+                addRow(i, JSON.stringify(doc[i]));
+              }
+            }
+            div.appendChild(dl);
+            var addButton = document.createElement('button');
+            addButton.appendChild(document.createTextNode('add'));
+            div.appendChild(addButton);
+            addButton.onclick = function(){
+              addRow('key', 'value');
+            };
+            var okButton = document.createElement('button');
+            okButton.appendChild(document.createTextNode('ok'));
+            div.appendChild(okButton);
+            okButton.onclick = function() {
+              var newDoc = {};
+              keys.forEach(function(key){
+                var value = key.valueInput.getValue();
+                if (value.replace(/^\s*|\s*$/g, '')){
+                  newDoc[key.getValue()] = JSON.parse(key.valueInput.getValue());
+                }
+              });
+              putAfter(newDoc, doc._rev, function(err, ok){
+                if (!err) {
+                  close();
+                } else {
+                  console.log(err);
+                  alert("error occured, see console");
+                }
+              });
+            };
+            var cancelButton = document.createElement('button');
+            cancelButton.appendChild(document.createTextNode('cancel'));
+            div.appendChild(cancelButton);
+            cancelButton.onclick = close;
+          });
+        };
+        nodeEl.onclick = click;
+        nodeEl.onmouseover = function() {
+          this.classList.add("selected");
+          //text.style.display = "block";
+        };
+        nodeEl.onmouseout = function() {
+          this.classList.remove("selected");
+          //text.style.display = "none";
+        };
+
+
+        var text = document.createElement('div');
+        //text.style.display = "none";
+        text.classList.add("box");
+        text.style.left = scale * (x + 3 * r) + "px";
+        text.style.top = scale * (y - 2) + "px";
+        text.short = pos + '-' + id.substr(0, shortDescLen);
+        text.long = pos + '-' + id;
+        text.appendChild(document.createTextNode(text.short));
+        text.onmouseover = function() {
+          this.style.zIndex = 1000;
+        };
+        text.onmouseout = function() {
+          this.style.zIndex = 1;
+        };
+        text.onclick = click;
+        box.appendChild(text);
+    }
+
+
+
+
+    function draw(forest){
+      var minUniq = minUniqueLength(allRevs);
+      var maxX = grid;
+      var maxY = grid;
+      var levelCount = []; // numer of nodes on some level (pos)
+      traverseRevTree(forest, function(isLeaf, pos, id, ctx) {
+        if (!levelCount[pos]) {
+          levelCount[pos] = 1;
+        } else {
+          levelCount[pos]++;
+        }
+
+
+        var rev = pos + '-' + id;
+        var x = levelCount[pos] * grid;
+        var y = pos * grid;
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+
+
+        node(x, y, rev, isLeaf, rev in deleted, rev === winner, minUniq);
+
+
+        if (ctx) {
+          line(x, y, ctx.x, ctx.y); 
+        }
+        return {x: x, y: y};
+      });
+      svg.setAttribute('viewBox', '0 0 ' + (maxX + grid) + ' ' + (maxY + grid));
+      svg.style.width = scale * (maxX + grid) + 'px';
+      svg.style.height = scale * (maxY + grid) + 'px';
+      callback(null, box);
+    }
+  };
+  return {'visualizeRevTree': visualize};
+};
+visualizeRevTree._delete = function(){};
+Pouch.plugin('visualizeRevTree', visualizeRevTree);
+
 /*jshint multistr:true*/
 
 // ## Templates

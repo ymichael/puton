@@ -391,8 +391,27 @@ window.Puton = (function() {
         initialize: function(opts) {
             this.db = opts.db;
             this.doc_id = opts.doc_id;
+            this.type = opts.type;
         },
-        render: function() {
+        render: function() { // polymorphic: forward the method depending on type
+            if (this.type === 'list') {
+                this.renderList.apply(this, arguments);
+            } else if (this.type === 'tree') {
+                this.renderTree.apply(this, arguments);
+            }
+        },
+        renderTree: function() {
+            var $el = this.$el;
+            var doc_id = this.doc_id;
+
+            this.db.visualizeRevTree(doc_id, function(err, box) {
+                if (err) {
+                    return console.error(err);
+                }
+                $el.html(box);
+            });
+        },
+        renderList: function() {
             var $el = this.$el;
             var doc_id = this.doc_id;
 
@@ -539,6 +558,7 @@ window.Puton = (function() {
         },
         events: {
             "click .revoption": "revOption",
+            "click .revtreeoption": "revTreeOption",
             "click .editoption": "editOption",
             "click .deleteoption": "deleteOption",
             "click": "toggleView",
@@ -567,7 +587,19 @@ window.Puton = (function() {
             var revisions = new v.Revisions({
                 el: $("#puton-revs-container"),
                 db: this.db,
-                doc_id: (this.model.toJSON())._id
+                doc_id: (this.model.toJSON())._id,
+                type: 'list'
+            });
+            revisions.render();
+        },
+        revTreeOption: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var revisions = new v.Revisions({
+                el: $("#puton-revs-container"),
+                db: this.db,
+                doc_id: (this.model.toJSON())._id,
+                type: 'tree'
             });
             revisions.render();
         },

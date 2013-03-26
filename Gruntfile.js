@@ -5,7 +5,8 @@ module.exports = function(grunt) {
         'public/js/libs/underscore.js',
         'public/js/libs/codemirror.js',
         'public/js/libs/backbone.js',
-        'public/js/libs/pouch.js'
+        'public/js/libs/pouch.js',
+        'public/js/libs/pouchdb.visualizeRevTree.js'
     ];
     var sourceFiles = [
         // templates

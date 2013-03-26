@@ -25,6 +25,7 @@ $(function() {
         "js/libs/codemirror.js",
         "js/libs/backbone.js",
         "js/libs/pouch.js",
+        "js/libs/pouchdb.visualizeRevTree.js",
         "js/libs/sandbox.js",
         "js/templates/template.js",
         "js/scripts/utils.js",
