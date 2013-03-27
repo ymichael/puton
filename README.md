@@ -43,6 +43,9 @@ $ NODE_ENV=production node puton.js
     - concat `lib.min` with `script.min`
 - `minify`
     - minify css files
+- `updatelibs`
+    - Updates Backbone, Underscore, jQuery
+    - `build:lib`
 - `updatepouch`
     - Update Pouch to latest version
 - `test`
