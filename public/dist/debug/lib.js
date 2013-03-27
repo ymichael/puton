@@ -20306,6 +20306,7 @@ var Pouch = function Pouch(name, opts, callback) {
   }
 
   var backend = Pouch.parseAdapter(opts.name || name);
+  opts.originalName = name;
   opts.name = opts.name || backend.name;
   opts.adapter = opts.adapter || backend.adapter;
 
@@ -20461,7 +20462,8 @@ Pouch.allDBName = function(adapter) {
   return [adapter, "://", Pouch.ALL_DBS].join('');
 };
 
-Pouch.open = function(adapter, name, callback) {
+Pouch.open = function(opts, callback) {
+  var adapter = opts.adapter;
   // skip http and https adaptors for allDbs
   if (adapter === "http" || adapter === "https") {
     callback();
@@ -20475,13 +20477,13 @@ Pouch.open = function(adapter, name, callback) {
     }
 
     // check if db has been registered in Pouch.ALL_DBS
-    var dbname = Pouch.dbName(adapter, name);
+    var dbname = Pouch.dbName(adapter, opts.name);
     db.get(dbname, function(err, response) {
       if (err) {
         if (err.status === 404) {
           db.put({
             _id: dbname,
-            dbname: Pouch.realDBName(adapter, name)
+            dbname: opts.originalName 
           }, callback);
         } else {
           callback(err);
@@ -21604,7 +21606,7 @@ var Changes = function() {
 };
 
 
-/*globals yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
+/*globals Pouch:true, yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
 /*globals collectConflicts: false, arrayFirst: false, rootToLeaf: false */
 
 "use strict";
@@ -21613,7 +21615,6 @@ var Changes = function() {
  * A generic pouch adapter
  */
 var PouchAdapter = function(opts, callback) {
-
 
   var api = {};
 
@@ -21636,7 +21637,9 @@ var PouchAdapter = function(opts, callback) {
     if (opts.name === Pouch.ALL_DBS) {
       callback(err, db);
     } else {
-      Pouch.open(opts.adapter, opts.name, function(err) { callback(err, db); });
+      Pouch.open(opts, function(err) {
+        callback(err, db);
+      });
     }
   });
 
@@ -21660,7 +21663,6 @@ var PouchAdapter = function(opts, callback) {
     }
     return customApi.bulkDocs({docs: [doc]}, opts, yankError(callback));
   };
-
 
   api.putAttachment = function (id, rev, blob, type, callback) {
     if (typeof type === 'function') {
@@ -21738,7 +21740,6 @@ var PouchAdapter = function(opts, callback) {
     return customApi.bulkDocs({docs: [newDoc]}, opts, yankError(callback));
   };
 
-
   api.revsDiff = function (req, opts, callback) {
     if (typeof opts === 'function') {
       callback = opts;
@@ -21809,7 +21810,6 @@ var PouchAdapter = function(opts, callback) {
     });
   };
 
-
   /* Begin api wrappers. Specific functionality to storage belongs in the _[method] */
   api.get = function (id, opts, callback) {
     if (!api.taskqueue.ready()) {
@@ -21830,7 +21830,7 @@ var PouchAdapter = function(opts, callback) {
       }
       // order with open_revs is unspecified
       leaves.forEach(function(leaf){
-        api.get(id, {rev: leaf}, function(err, doc){
+        api.get(id, {rev: leaf, revs: opts.revs}, function(err, doc){
           if (!err) {
             result.push({ok: doc});
           } else {
@@ -25116,12 +25116,32 @@ tmpl.app = "\
 <h1>Puton</h1>\
 <div id='puton-main'>\
 </div>\
-<a href='#' id='hide-button'>Close</a>\
-<div id='log'></div>";
+<a id='puton-hide-button'>Close</a>\
+<div id='puton-log'></div>";
 
 tmpl.mainView = "\
-<b><label for='db'>db name: </label></b>\
-<input type='text' id='db'/>";
+\
+<div class='puton-section'>\
+    <h2>Open a Pouch:</h2>\
+    <div class='puton-main-input'>\
+        <label class='puton-db-label' for='puton-db-input'>Pouch(</label>\
+        <input type='text' id='puton-db-input'/>\
+        <label class='puton-db-label' for='puton-db-input'>);</label>\
+    </div>\
+</div>\
+\
+<div class='puton-section'>\
+    <h2>Existing Pouches:</h2>\
+    <%  if (allDbs.length === 0) { %>\
+        <p class='puton-db-info'>No Existing Pouches :(</p>\
+    <%  } else { %>\
+        <ul class='puton-dbnames'>\
+            <%  _.each(allDbs, function(db) { %>\
+                <li class='puton-dbname'><%= db %></li>\
+            <% }) %>\
+        </ul>\
+    <% } %>\
+</div>";
 
 tmpl.log = "\
 <p class='log log-<%- type %>'>\
@@ -25136,7 +25156,9 @@ tmpl.log = "\
 
 tmpl.doc_full = "\
 <div class='optionsbar'>\
-    <a class='option revoption'>revs</a>\
+    <a class='option revtreeoption'>rev-tree</a>\
+    &nbsp;|&nbsp;\
+    <a class='option revoption'>rev-list</a>\
     &nbsp;|&nbsp;\
     <a class='option editoption'>edit</a>\
     &nbsp;|&nbsp;\
@@ -25239,22 +25261,25 @@ window.Puton = (function() {
     //
     // Global Puton Object
     //
-    var Puton = function() {
-        this._app = new Puton.app();
-        this._app.start();
+    var Puton;
+    Puton = function() {
+        Puton._app = new Puton.app();
+        Puton._app.start();
     };
 
     //
     // Main Application
     //
     Puton.app = Backbone.View.extend({
-        id: "puton-container",
+        id: "puton",
         tagName: "div",
         initialize: function() {
         },
         start: function() {
             this.render();
-            this.logview = new v.Log();
+            this.logview = new v.Log({
+                el: this.$("#puton-log")
+            });
             this.mainPage();
         },
         render: function() {
@@ -25265,12 +25290,15 @@ window.Puton = (function() {
             "changeView": "changeView",
             "selectDB": "selectDB",
             "click h1": "mainPage",
-            "click #hide-button": "hide"
+            "click #puton-hide-button": "hide"
         },
         mainPage: function(e) {
             this.currentView = new v.Main({
                 el: this.$("#puton-main")
             }).render();
+        },
+        show: function(e) {
+            this.$el.show();
         },
         hide: function(e) {
             this.$el.hide();
@@ -25307,31 +25335,53 @@ window.Puton = (function() {
     //
     var v = {};
     v.Main = Backbone.View.extend({
+        initialize: function() {
+            this.allDbs = [];
+        },
+        updateAllDbs: function() {
+            var that = this;
+            Pouch.allDbs(function(err, dbs) {
+                that.allDbs = dbs;
+                that._render();
+            });
+        },
         events: {
-            "keydown #db": "submit"
+            "keydown #puton-db-input": "submit",
+            "click .puton-dbname": "selectDb"
         },
         render: function() {
-            this.$el.html(tmpl.mainView());
+            this.updateAllDbs();
+            return this._render();
+        },
+        _render: function() {
+            this.$el.html(tmpl.mainView({
+                allDbs: this.allDbs
+            }));
             return this;
         },
+        selectDb: function(e) {
+            var db = $(e.target).html();
+            this.dbSelected(db);
+        },
         submit: function(e) {
-
             if (e.keyCode === 13) {
-                var dbname = this.$("#db").val();
+                var db = this.$("#puton-db-input").val();
 
                 // prevent empty string
-                if (dbname.length === 0) {
-                    // noop.
+                if (db.length === 0) {
                     return;
                 }
 
-                this.$el.trigger('selectDB', dbname);
+                this.dbSelected(db);
             }
+        },
+        dbSelected: function(db) {
+            this.$el.trigger('selectDB', db);
         }
     });
 
     v.Log = Backbone.View.extend({
-        el: "#log",
+        el: "#puton-log",
         initialize: function() {
             var self = this;
             self.count = 0;
@@ -25627,8 +25677,27 @@ window.Puton = (function() {
         initialize: function(opts) {
             this.db = opts.db;
             this.doc_id = opts.doc_id;
+            this.type = opts.type;
         },
-        render: function() {
+        render: function() { // polymorphic: forward the method depending on type
+            if (this.type === 'list') {
+                this.renderList.apply(this, arguments);
+            } else if (this.type === 'tree') {
+                this.renderTree.apply(this, arguments);
+            }
+        },
+        renderTree: function() {
+            var $el = this.$el;
+            var doc_id = this.doc_id;
+
+            this.db.visualizeRevTree(doc_id, function(err, box) {
+                if (err) {
+                    return console.error(err);
+                }
+                $el.html(box);
+            });
+        },
+        renderList: function() {
             var $el = this.$el;
             var doc_id = this.doc_id;
 
@@ -25775,6 +25844,7 @@ window.Puton = (function() {
         },
         events: {
             "click .revoption": "revOption",
+            "click .revtreeoption": "revTreeOption",
             "click .editoption": "editOption",
             "click .deleteoption": "deleteOption",
             "click": "toggleView",
@@ -25803,7 +25873,19 @@ window.Puton = (function() {
             var revisions = new v.Revisions({
                 el: $("#puton-revs-container"),
                 db: this.db,
-                doc_id: (this.model.toJSON())._id
+                doc_id: (this.model.toJSON())._id,
+                type: 'list'
+            });
+            revisions.render();
+        },
+        revTreeOption: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var revisions = new v.Revisions({
+                el: $("#puton-revs-container"),
+                db: this.db,
+                doc_id: (this.model.toJSON())._id,
+                type: 'tree'
             });
             revisions.render();
         },
@@ -25884,8 +25966,8 @@ $(function() {
     //
     // Start Puton
     //
-    var puton = new Puton();
-    $('body').append(puton._app.$el);
+    new Puton();
+    $('body').append(window.Puton._app.$el);
 
     if (typeof window.PUTON_LOADED && window.PUTON_LOADED === -1) {
         window.PUTON_LOADED = 1;
