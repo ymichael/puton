@@ -28,6 +28,7 @@ module.exports = function(grunt) {
                 jshintrc: '.jshintrc'
             },
             files: [
+                "spec/*.js",
                 "public/js/scripts/*.js"
             ]
         },
