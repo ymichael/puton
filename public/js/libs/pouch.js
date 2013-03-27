@@ -695,6 +695,7 @@ var Pouch = function Pouch(name, opts, callback) {
   }
 
   var backend = Pouch.parseAdapter(opts.name || name);
+  opts.originalName = name;
   opts.name = opts.name || backend.name;
   opts.adapter = opts.adapter || backend.adapter;
 
@@ -850,7 +851,8 @@ Pouch.allDBName = function(adapter) {
   return [adapter, "://", Pouch.ALL_DBS].join('');
 };
 
-Pouch.open = function(adapter, name, callback) {
+Pouch.open = function(opts, callback) {
+  var adapter = opts.adapter;
   // skip http and https adaptors for allDbs
   if (adapter === "http" || adapter === "https") {
     callback();
@@ -864,13 +866,13 @@ Pouch.open = function(adapter, name, callback) {
     }
 
     // check if db has been registered in Pouch.ALL_DBS
-    var dbname = Pouch.dbName(adapter, name);
+    var dbname = Pouch.dbName(adapter, opts.name);
     db.get(dbname, function(err, response) {
       if (err) {
         if (err.status === 404) {
           db.put({
             _id: dbname,
-            dbname: Pouch.realDBName(adapter, name)
+            dbname: opts.originalName 
           }, callback);
         } else {
           callback(err);
@@ -1993,7 +1995,7 @@ var Changes = function() {
 };
 
 
-/*globals yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
+/*globals Pouch:true, yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
 /*globals collectConflicts: false, arrayFirst: false, rootToLeaf: false */
 
 "use strict";
@@ -2002,7 +2004,6 @@ var Changes = function() {
  * A generic pouch adapter
  */
 var PouchAdapter = function(opts, callback) {
-
 
   var api = {};
 
@@ -2025,7 +2026,9 @@ var PouchAdapter = function(opts, callback) {
     if (opts.name === Pouch.ALL_DBS) {
       callback(err, db);
     } else {
-      Pouch.open(opts.adapter, opts.name, function(err) { callback(err, db); });
+      Pouch.open(opts, function(err) {
+        callback(err, db);
+      });
     }
   });
 
@@ -2049,7 +2052,6 @@ var PouchAdapter = function(opts, callback) {
     }
     return customApi.bulkDocs({docs: [doc]}, opts, yankError(callback));
   };
-
 
   api.putAttachment = function (id, rev, blob, type, callback) {
     if (typeof type === 'function') {
@@ -2127,7 +2129,6 @@ var PouchAdapter = function(opts, callback) {
     return customApi.bulkDocs({docs: [newDoc]}, opts, yankError(callback));
   };
 
-
   api.revsDiff = function (req, opts, callback) {
     if (typeof opts === 'function') {
       callback = opts;
@@ -2198,7 +2199,6 @@ var PouchAdapter = function(opts, callback) {
     });
   };
 
-
   /* Begin api wrappers. Specific functionality to storage belongs in the _[method] */
   api.get = function (id, opts, callback) {
     if (!api.taskqueue.ready()) {
@@ -2219,7 +2219,7 @@ var PouchAdapter = function(opts, callback) {
       }
       // order with open_revs is unspecified
       leaves.forEach(function(leaf){
-        api.get(id, {rev: leaf}, function(err, doc){
+        api.get(id, {rev: leaf, revs: opts.revs}, function(err, doc){
           if (!err) {
             result.push({ok: doc});
           } else {

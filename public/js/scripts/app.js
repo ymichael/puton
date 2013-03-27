@@ -3,9 +3,10 @@ window.Puton = (function() {
     //
     // Global Puton Object
     //
-    var Puton = function() {
-        this._app = new Puton.app();
-        this._app.start();
+    var Puton;
+    Puton = function() {
+        Puton._app = new Puton.app();
+        Puton._app.start();
     };
 
     //
@@ -37,6 +38,9 @@ window.Puton = (function() {
             this.currentView = new v.Main({
                 el: this.$("#puton-main")
             }).render();
+        },
+        show: function(e) {
+            this.$el.show();
         },
         hide: function(e) {
             this.$el.hide();

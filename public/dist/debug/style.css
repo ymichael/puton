@@ -20,6 +20,7 @@
   width: 100px;
   text-align: right;
   display: block;
+  cursor: pointer;
 }
 #puton h1,
 #puton h2,

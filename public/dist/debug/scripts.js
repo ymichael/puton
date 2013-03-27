@@ -7,7 +7,7 @@ tmpl.app = "\
 <h1>Puton</h1>\
 <div id='puton-main'>\
 </div>\
-<a href='#' id='puton-hide-button'>Close</a>\
+<a id='puton-hide-button'>Close</a>\
 <div id='puton-log'></div>";
 
 tmpl.mainView = "\
@@ -152,9 +152,10 @@ window.Puton = (function() {
     //
     // Global Puton Object
     //
-    var Puton = function() {
-        this._app = new Puton.app();
-        this._app.start();
+    var Puton;
+    Puton = function() {
+        Puton._app = new Puton.app();
+        Puton._app.start();
     };
 
     //
@@ -186,6 +187,9 @@ window.Puton = (function() {
             this.currentView = new v.Main({
                 el: this.$("#puton-main")
             }).render();
+        },
+        show: function(e) {
+            this.$el.show();
         },
         hide: function(e) {
             this.$el.hide();
@@ -853,8 +857,8 @@ $(function() {
     //
     // Start Puton
     //
-    var puton = new Puton();
-    $('body').append(puton._app.$el);
+    new Puton();
+    $('body').append(window.Puton._app.$el);
 
     if (typeof window.PUTON_LOADED && window.PUTON_LOADED === -1) {
         window.PUTON_LOADED = 1;

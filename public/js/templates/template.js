@@ -7,7 +7,7 @@ tmpl.app = "\
 <h1>Puton</h1>\
 <div id='puton-main'>\
 </div>\
-<a href='#' id='puton-hide-button'>Close</a>\
+<a id='puton-hide-button'>Close</a>\
 <div id='puton-log'></div>";
 
 tmpl.mainView = "\

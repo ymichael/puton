@@ -39,12 +39,14 @@ if (production) {
     bookmarklet = [
     "javascript:(function() {",
         "if (window.PUTON_LOADED === -1) {",
-            "alert('Puton is already loaded'); return;",
+            "alert('Puton is already loaded');",
+            "return;",
         "} else if (window.PUTON_LOADED === 1) {",
-            "$('#puton-container').show(); return;",
+            "Puton._app.show();",
+            "return;",
         "}",
         "window.PUTON_HOST = window.PUTON_HOST || 'http://puton.jit.su/';",
-        "window.PUTON_LOADED=-1;", // set PUTON_LOADED to loading mode
+        "window.PUTON_LOADED = -1;", // set PUTON_LOADED to loading mode
 
         // puton
         "var puton = document.createElement('script');",
@@ -63,12 +65,14 @@ if (production) {
     bookmarklet = [
     "javascript:(function() {",
         "if (window.PUTON_LOADED === -1) {",
-            "alert('Puton is already loaded'); return;",
+            "alert('Puton is already loaded');",
+            "return;",
         "} else if (window.PUTON_LOADED === 1) {",
-            "$('#puton-container').show(); return;",
+            "Puton._app.show();",
+            "return;",
         "}",
         "window.PUTON_HOST = window.PUTON_HOST || 'http://puton.jit.su/';",
-        "window.PUTON_LOADED=-1;", // set PUTON_LOADED to loading mode
+        "window.PUTON_LOADED = -1;", // set PUTON_LOADED to loading mode
 
         // we include jQuery first to make our lives easier.
         "var jq = document.createElement('script');",
