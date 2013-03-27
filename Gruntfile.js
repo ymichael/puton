@@ -114,6 +114,15 @@ module.exports = function(grunt) {
             },
             updatePouch: {
                 cmd: 'curl -o public/js/libs/pouch.js http://download.pouchdb.com/pouchdb-nightly.js'
+            },
+            updateBackbone: {
+                cmd: 'curl -o public/js/libs/backbone.js http://backbonejs.org/backbone.js'
+            },
+            updateUnderscore: {
+                cmd: 'curl -o public/js/libs/underscore.js http://underscorejs.org/underscore.js'
+            },
+            updatejQuery: {
+                cmd: 'curl -o public/js/libs/jquery.js http://code.jquery.com/jquery.js'
             }
         }
     });
@@ -133,6 +142,7 @@ module.exports = function(grunt) {
     grunt.registerTask('browsertest', ['connect']);
     grunt.registerTask('build', ['concat:dist', 'uglify:dist', 'concat:fulldist', 'less:release']);
     grunt.registerTask("minify", ['cssmin']);
+    grunt.registerTask("updatelibs", ['exec:updateBackbone', 'exec:updateUnderscore', 'exec:updatejQuery', 'build:lib']);
     grunt.registerTask("updatepouch", ['exec:updatePouch']);
     grunt.registerTask("release", ['lint','updatepouch','test', 'build', 'minify']);
     grunt.registerTask("default", ['release']);
