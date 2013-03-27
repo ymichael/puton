@@ -49,14 +49,14 @@
         }
         #puton-db-input {
             font: 20px 'Source Code Pro', sans-serif;
-            line-height: 40px;
+            line-height: 20px;
             width: 200px;
             border: none;
             outline: none;
-            border-bottom: solid 3px @fontcolor;
-            margin-left: 10px;
-            margin-right: 10px;
-            margin-top: -20px;
+            border-bottom: solid 2px @fontcolor;
+            margin: 10px 10px 0 10px;
+            padding: 5px 0;
+            vertical-align: bottom;
             display: inline-block;
         }
     }
@@ -70,7 +70,7 @@
         .puton-dbname {
             list-style: none;
             padding: 5px 10px;
-            margin: 15px 0;
+            margin: 0;
             font-size: 22px;
             cursor: pointer;
             &:nth-child(odd) {
@@ -81,7 +81,6 @@
             }
             &:hover {
                 color: black;
-                font-weight: bold;
                 border-left: solid 15px @selected;
             }
         }
