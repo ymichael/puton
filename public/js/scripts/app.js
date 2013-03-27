@@ -5,6 +5,10 @@ window.Puton = (function() {
     //
     var Puton;
     Puton = function() {
+        if (Puton._app) {
+            Puton._app.show();
+            return;
+        }
         Puton._app = new Puton.app();
         Puton._app.start();
     };

@@ -154,6 +154,10 @@ window.Puton = (function() {
     //
     var Puton;
     Puton = function() {
+        if (Puton._app) {
+            Puton._app.show();
+            return;
+        }
         Puton._app = new Puton.app();
         Puton._app.start();
     };
@@ -857,7 +861,7 @@ $(function() {
     //
     // Start Puton
     //
-    new Puton();
+    Puton();
     $('body').append(window.Puton._app.$el);
 
     if (typeof window.PUTON_LOADED && window.PUTON_LOADED === -1) {
