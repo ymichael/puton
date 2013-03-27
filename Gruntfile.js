@@ -84,13 +84,21 @@ module.exports = function(grunt) {
         },
         jasmine: {
             all: {
-              src: allFiles,
-              options: {
-                specs: 'spec/*.spec.js'
-              }
+                src: allFiles,
+                options: {
+                    host: "http://localhost:9001/",
+                    helpers: 'spec/helpers.js',
+                    specs: 'spec/*.spec.js'
+                }
             }
         },
         connect: {
+            jasmine: {
+                options: {
+                    port: 9001,
+                    base: "."
+                }
+            },
             server: {
                 options: {
                     port: 9001,
@@ -140,12 +148,12 @@ module.exports = function(grunt) {
 
     grunt.registerTask('lint', ['jshint']);
     grunt.registerTask('test', ['jasmine']);
-    grunt.registerTask('browsertest', ['connect']);
+    grunt.registerTask('browser', ['connect:server']);
     grunt.registerTask('build', ['concat:dist', 'uglify:dist', 'concat:fulldist', 'less:release']);
     grunt.registerTask("minify", ['cssmin']);
     grunt.registerTask("updatelibs", ['exec:updateBackbone', 'exec:updateUnderscore', 'exec:updatejQuery', 'build:lib']);
     grunt.registerTask("updatepouch", ['exec:updatePouch']);
-    grunt.registerTask("release", ['lint','updatepouch','test', 'build', 'minify']);
+    grunt.registerTask("release", ['lint','updatepouch', 'build', 'minify']);
     grunt.registerTask("default", ['release']);
     grunt.registerTask("run", ['exec:default']);
 

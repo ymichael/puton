@@ -50,7 +50,7 @@ $ NODE_ENV=production node puton.js
     - Update Pouch to latest version
 - `test`
     - Runs Jasmine tests
-- `browsertests`
+- `browser`
     - Starts Connect Server to serve tests at http://localhost:9001
 - `release` __(default task)__
     - `lint`

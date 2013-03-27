@@ -21,7 +21,7 @@
     "tmpl": true,
     "CodeMirror": true,
     "utils": true,
-
+    "helpers": true,
     "it": true,
     "describe": true,
     "beforeEach": true,
