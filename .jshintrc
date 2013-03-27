@@ -23,6 +23,8 @@
     "utils": true,
     "helpers": true,
     "it": true,
+    "runs": true,
+    "waitsFor": true,
     "describe": true,
     "beforeEach": true,
     "expect": true

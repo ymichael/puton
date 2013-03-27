@@ -136,7 +136,6 @@ window.Puton = (function() {
 
             var self = this;
             self.count = 0;
-            
             ['log','info','error'].forEach(function(type) {
                 var orin = console[type];
                 console[type] = function(str) {

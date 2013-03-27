@@ -27,7 +27,7 @@ helpers.deleteAllPouches = function(callback) {
             return function(callback) {
                 Pouch.destroy(db, callback);
             };
-        }), callback)
+        }), callback);
     });
 };
 

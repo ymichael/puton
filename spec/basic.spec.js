@@ -73,7 +73,7 @@ describe("Main Application View", function() {
         });
         mainView.$el.hide();
         $("body").append(mainView.el);
-        $li = mainView.$('.puton-dbname')[0];
+        var $li = mainView.$('.puton-dbname')[0];
         $li.click();
 
         expect(eventTriggered).toBe(true);

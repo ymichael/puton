@@ -282,9 +282,12 @@ window.Puton = (function() {
     v.Log = Backbone.View.extend({
         el: "#puton-log",
         initialize: function() {
+            if (window.PUTON_TESTS) {
+                return;
+            }
+
             var self = this;
             self.count = 0;
-
             ['log','info','error'].forEach(function(type) {
                 var orin = console[type];
                 console[type] = function(str) {
