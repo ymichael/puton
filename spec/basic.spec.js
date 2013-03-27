@@ -1,7 +1,7 @@
 describe("General Application Functionality", function() {
     var puton;
     beforeEach(function() {
-        new Puton(); 
+        Puton(); 
     });
 
     it("should appear",function() {
@@ -13,6 +13,12 @@ describe("General Application Functionality", function() {
         Puton._app.$("#puton-hide-button").click(); 
         expect(Puton._app.$el.css('display')).toBe("none");
 	});
+
+    it("should reappear when the application is re-launched", function() {
+        Puton._app.$("#puton-hide-button").click();
+        Puton();
+        expect(Puton._app.$el.css('display')).not.toBe("none");
+    });
 });
 
 describe("Main Application View", function() {
