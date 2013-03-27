@@ -1,7 +1,7 @@
 describe("General Application Functionality", function() {
     var puton;
     beforeEach(function() {
-        Puton(); 
+        Puton();
     });
 
     it("should appear",function() {
@@ -10,7 +10,7 @@ describe("General Application Functionality", function() {
 
 	it("should close when the #puton-hide-button is clicked", function() {
         // click on hide button
-        Puton._app.$("#puton-hide-button").click(); 
+        Puton._app.$("#puton-hide-button").click();
         expect(Puton._app.$el.css('display')).toBe("none");
 	});
 

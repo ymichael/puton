@@ -1,5 +1,6 @@
 {
   "curly": true,
+  "devel": true,
   "eqnull": true,
   "eqeqeq": true,
   "evil": true,
@@ -13,8 +14,17 @@
   "globals": {
     "jQuery": true,
     "Puton": false,
+    "Pouch": true,
     "Backbone": true,
     "_": true,
-    "$": true
+    "$": true,
+    "tmpl": true,
+    "CodeMirror": true,
+    "utils": true,
+
+    "it": true,
+    "describe": true,
+    "beforeEach": true,
+    "expect": true
   }
 }

@@ -3,7 +3,8 @@ window.Puton = (function() {
     //
     // Global Puton Object
     //
-    var Puton;
+    var Puton = {};
+    Puton.utils = utils;
     Puton = function() {
         if (Puton._app) {
             Puton._app.show();
@@ -329,7 +330,6 @@ window.Puton = (function() {
         initialize: function(opts) {
             this.state = 0;
             this.db = opts.db;
-            
             this.docs = new m.Documents(null, {db: this.db, populate: false});
         },
         events: {
@@ -456,7 +456,7 @@ window.Puton = (function() {
                 }
 
                 var $fragment = $(tmpl.revisions({}));
-                
+
                 doc._revs_info.forEach(function(rev) {
                     var revisionView = new v.Revision({
                         db: this.db
@@ -469,13 +469,11 @@ window.Puton = (function() {
                             if (err) {
                                 return console.error(err);
                             }
-                            $tmp.html( 
-                                revisionView.render(doc, doc_id).el );
+                            $tmp.html(revisionView.render(doc, doc_id).el);
                             reRender();
                         });
                     } else {
-                        $tmp.html( 
-                            revisionView.render(false, doc_id).el );
+                        $tmp.html(revisionView.render(false, doc_id).el);
                     }
 
                 });
@@ -497,7 +495,7 @@ window.Puton = (function() {
             if (model) {
                 this.$el.html(tmpl.rev_full({
                     key: model._rev,
-                    value: syntaxHighlight(model)
+                    value: Puton.utils.syntaxHighlight(model)
                 }));
             } else {
                 this.$el.html(tmpl.rev_full({
@@ -526,7 +524,7 @@ window.Puton = (function() {
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
                     key: model.toJSON().key || this.model.id,
-                    value: syntaxHighlight(model.toJSON())
+                    value: Puton.utils.syntaxHighlight(model.toJSON())
                 }));
                 if (!this.model.id) {
                     // todo: more proper hiding of edit/delete
@@ -560,10 +558,12 @@ window.Puton = (function() {
 
             var json = this.codeEdit.getValue().trim();
             try {
-                if (!json || json[0] !== '{' || json[json.length-1] !== '}' || (json = JSON.parse(json)) === false) {
+                if (!json || json[0] !== '{' ||
+                    json[json.length-1] !== '}' ||
+                    (json = JSON.parse(json)) === false) {
                     throw("Not a valid object");
                 }
-                
+
                 json._id = (this.model.toJSON())._id;
                 json._rev = (this.model.toJSON())._rev;
 
@@ -576,7 +576,7 @@ window.Puton = (function() {
                         if (err) {
                             return console.error(err);
                         }
-                        
+
                         self.model.set(res);
                         self.show = "full";
                         self.render();
@@ -680,7 +680,7 @@ window.Puton = (function() {
             var that = this;
             this.db = options.db;
             this.docs = new m.Documents(null, {db: this.db});
-            
+
             // bootstrap database
             this.db.info(function(err, info) {
                 that.set(info);
