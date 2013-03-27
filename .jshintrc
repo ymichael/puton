@@ -2,11 +2,19 @@
   "curly": true,
   "eqnull": true,
   "eqeqeq": true,
-
   "evil": true,
-
+  "immed": true,
+  "indent": 4,
+  "latedef": true,
+  "noarg": true,
+  "undef": true,
+  "trailing": true,
+  "browser": true,
   "globals": {
     "jQuery": true,
-    "Puton": false
+    "Puton": false,
+    "Backbone": true,
+    "_": true,
+    "$": true
   }
 }
