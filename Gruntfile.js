@@ -194,6 +194,8 @@ module.exports = function(grunt) {
 
     // saucelabs
     grunt.registerTask("saucelabs", ["connect:test", "saucelabs-jasmine"]);
+
+    // travis
     grunt.registerTask("test-travis", ["default", "saucelabs"]);
 
     grunt.registerTask("build:lib", ['concat:lib', 'uglify:lib']);
