@@ -1,15 +1,22 @@
 {
   "name": "puton",
-  "version": "0.0.1-44",
+  "version": "0.1.0",
+  "description": "Futon for PouchDB",
   "dependencies": {
     "express": "*",
     "jade": "*",
     "less-middleware": "*",
     "marked": "*"
   },
+  "keywords": [
+    "puton",
+    "pouchdb",
+    "futon"
+  ],
   "subdomain": "puton",
   "scripts": {
-    "start": "node puton.js"
+    "start": "node puton.js",
+    "test": "grunt test-travis"
   },
   "engines": {
     "node": "0.8.x"
@@ -24,6 +31,8 @@
     "grunt-contrib-less": "~0.5.0",
     "grunt-contrib-connect": "*",
     "grunt-contrib-jasmine": "*",
-    "grunt-exec": "~0.4.0"
-  }
+    "grunt-exec": "~0.4.0",
+    "grunt-saucelabs": "*"
+  },
+  "license": "Apache"
 }
