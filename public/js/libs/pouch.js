@@ -1839,6 +1839,33 @@ var collectConflicts = function(metadata) {
   return conflicts;
 };
 
+
+// for every node in a revision tree computes its distance from the closest
+// leaf
+var computeHeight = function(revs) {
+  var height = {};
+  var edges = [];
+  traverseRevTree(revs, function(isLeaf, pos, id, prnt) {
+    var rev = pos + "-" + id;
+    if (isLeaf) {
+      height[rev] = 0;
+    }
+    if (prnt !== undefined) {
+      edges.push({from: prnt, to: rev});
+    }
+    return rev;
+  });
+  edges.reverse();
+  edges.forEach(function(edge) {
+    if (height[edge.from] === undefined) {
+      height[edge.from] = 1 + height[edge.to];
+    } else {
+      height[edge.from] = Math.min(height[edge.from], 1 + height[edge.to]);
+    }
+  });
+  return height;
+};
+
 // returns first element of arr satisfying callback predicate
 var arrayFirst = function(arr, callback) {
   for (var i = 0; i < arr.length; i++) {
@@ -1909,6 +1936,7 @@ if (typeof module !== 'undefined' && module.exports) {
     collectRevs: collectRevs,
     collectLeaves: collectLeaves,
     collectConflicts: collectConflicts,
+    computeHeight: computeHeight,
     arrayFirst: arrayFirst,
     filterChange: filterChange,
     atob: function(str) {
@@ -1995,8 +2023,8 @@ var Changes = function() {
 };
 
 
-/*globals Pouch:true, yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
-/*globals collectConflicts: false, arrayFirst: false, rootToLeaf: false */
+/*globals Pouch: true, yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
+/*globals collectConflicts: false, arrayFirst: false, rootToLeaf: false, computeHeight: false */
 
 "use strict";
 
@@ -2032,13 +2060,43 @@ var PouchAdapter = function(opts, callback) {
     }
   });
 
+  var auto_compaction = (opts.auto_compaction === true);
+
+  // wraps a callback with a function that runs compaction after each edit
+  var autoCompact = function(callback) {
+    if (!auto_compaction) {
+      return callback;
+    }
+    return function(err, res) {
+      if (err) {
+        call(callback, err);
+      } else {
+        var count = res.length;
+        var decCount = function() {
+          count--;
+          if (!count) {
+            call(callback, null, res);
+          }
+        };
+        res.forEach(function(doc) {
+          if (doc.ok) {
+            // TODO: we need better error handling
+            compactDocument(doc.id, 1, decCount);
+          } else {
+            decCount();
+          }
+        });
+      }
+    };
+  };
 
   api.post = function (doc, opts, callback) {
     if (typeof opts === 'function') {
       callback = opts;
       opts = {};
     }
-    return customApi.bulkDocs({docs: [doc]}, opts, yankError(callback));
+    return customApi.bulkDocs({docs: [doc]}, opts,
+        autoCompact(yankError(callback)));
   };
 
   api.put = function(doc, opts, callback) {
@@ -2050,7 +2108,8 @@ var PouchAdapter = function(opts, callback) {
     if (!doc || !('_id' in doc)) {
       return call(callback, Pouch.Errors.MISSING_ID);
     }
-    return customApi.bulkDocs({docs: [doc]}, opts, yankError(callback));
+    return customApi.bulkDocs({docs: [doc]}, opts,
+        autoCompact(yankError(callback)));
   };
 
   api.putAttachment = function (id, rev, blob, type, callback) {
@@ -2163,22 +2222,23 @@ var PouchAdapter = function(opts, callback) {
 
   // compact one document and fire callback
   // by compacting we mean removing all revisions which
-  // are not leaves in revision tree
-  var compactDocument = function(docId, callback) {
+  // are further from the leaf in revision tree than max_height
+  var compactDocument = function(docId, max_height, callback) {
     customApi._getRevisionTree(docId, function(err, rev_tree){
       if (err) {
         return call(callback);
       }
+      var height = computeHeight(rev_tree);
       var nonLeaves = [];
-      traverseRevTree(rev_tree, function(isLeaf, pos, id) {
-        var rev = pos + '-' + id;
-        if (!isLeaf) {
+      Object.keys(height).forEach(function(rev) {
+        if (height[rev] > max_height) {
           nonLeaves.push(rev);
         }
       });
       customApi._removeDocRevisions(docId, nonLeaves, callback);
     });
   };
+
   // compact the whole database using single document
   // compaction
   api.compact = function(callback) {
@@ -2189,7 +2249,7 @@ var PouchAdapter = function(opts, callback) {
         return;
       }
       res.rows.forEach(function(row) {
-        compactDocument(row.key, function() {
+        compactDocument(row.key, 0, function() {
           count--;
           if (!count) {
             call(callback);
@@ -2253,16 +2313,14 @@ var PouchAdapter = function(opts, callback) {
             var l = leaves[i];
             // looks like it's the only thing couchdb checks
             if (!(typeof(l) === "string" && /^\d+-/.test(l))) {
-              return call(callback, extend({}, Pouch.Errors.BAD_REQUEST, {
-                reason: "Invalid rev format"
-              }));
+              return call(callback, Pouch.error(Pouch.Errors.BAD_REQUEST,
+                "Invalid rev format" ));
             }
           }
           finishOpenRevs();
         } else {
-          return call(callback, extend({}, Pouch.Errors.UNKNOWN_ERROR, {
-            reason: 'function_clause'
-          }));
+          return call(callback, Pouch.error(Pouch.Errors.UNKNOWN_ERROR,
+            'function_clause'));
         }
       }
       return; // open_revs does not like other options
@@ -2360,15 +2418,15 @@ var PouchAdapter = function(opts, callback) {
     }
     if ('keys' in opts) {
       if ('startkey' in opts) {
-        call(callback, extend({
-          reason: 'Query parameter `start_key` is not compatible with multi-get'
-        }, Pouch.Errors.QUERY_PARSE_ERROR));
+        call(callback, Pouch.error(Pouch.Errors.QUERY_PARSE_ERROR,
+          'Query parameter `start_key` is not compatible with multi-get'
+        ));
         return;
       }
       if ('endkey' in opts) {
-        call(callback, extend({
-          reason: 'Query parameter `end_key` is not compatible with multi-get'
-        }, Pouch.Errors.QUERY_PARSE_ERROR));
+        call(callback, Pouch.error(Pouch.Errors.QUERY_PARSE_ERROR,
+          'Query parameter `end_key` is not compatible with multi-get'
+        ));
         return;
       }
     }
@@ -2381,6 +2439,7 @@ var PouchAdapter = function(opts, callback) {
       api.taskqueue.addTask('changes', arguments);
       return;
     }
+    opts = extend(true, {}, opts);
     return customApi._changes(opts);
   };
 
@@ -2419,6 +2478,8 @@ var PouchAdapter = function(opts, callback) {
     }
     if (!opts) {
       opts = {};
+    } else {
+      opts = extend(true, {}, opts);
     }
 
     if (!req || !req.docs || req.docs.length < 1) {
@@ -2429,11 +2490,12 @@ var PouchAdapter = function(opts, callback) {
       return call(callback, Pouch.Errors.QUERY_PARSE_ERROR);
     }
 
+    req = extend(true, {}, req);
     if (!('new_edits' in opts)) {
       opts.new_edits = true;
     }
 
-    return customApi._bulkDocs(req, opts, callback);
+    return customApi._bulkDocs(req, opts, autoCompact(callback));
   };
 
   /* End Wrappers */
@@ -2711,16 +2773,34 @@ var HttpPouch = function(opts, callback) {
 
   // Sends a POST request to the host calling the couchdb _compact function
   //    version: The version of CouchDB it is running
-  api.compact = function(callback) {
+  api.compact = function(opts, callback) {
     if (!api.taskqueue.ready()) {
       api.taskqueue.addTask('compact', arguments);
       return;
+    }
+    if (typeof opts === 'function') {
+      callback = opts;
+      opts = {};
     }
     ajax({
       auth: host.auth,
       url: genDBUrl(host, '_compact'),
       method: 'POST'
-    }, callback);
+    }, function() {
+      function ping() {
+        api.info(function(err, res) {
+          if (!res.compact_running) {
+            call(callback, null);
+          } else {
+            setTimeout(ping, opts.interval || 200);
+          }
+        });
+      }
+      // Ping the http if it's finished compaction
+      if (typeof callback === "function") {
+        ping();
+      }
+    });
   };
 
   // Calls GET on the host, which gets back a JSON string containing
@@ -3394,7 +3474,7 @@ var IdbPouch = function(opts, callback) {
     db.createObjectStore(DOC_STORE, {keyPath : 'id'})
       .createIndex('seq', 'seq', {unique: true});
     db.createObjectStore(BY_SEQ_STORE, {autoIncrement : true})
-      .createIndex('_rev', '_rev', {unique: true});
+      .createIndex('_doc_id_rev', '_doc_id_rev', {unique: true});
     db.createObjectStore(ATTACH_STORE, {keyPath: 'digest'});
     db.createObjectStore(META_STORE, {keyPath: 'id', autoIncrement: false});
     db.createObjectStore(DETECT_BLOB_SUPPORT_STORE);
@@ -3471,7 +3551,7 @@ var IdbPouch = function(opts, callback) {
   api._bulkDocs = function idb_bulkDocs(req, opts, callback) {
 
     var newEdits = opts.new_edits;
-    var userDocs = extend(true, [], req.docs);
+    var userDocs = req.docs;
 
     // Parse the docs, give them a sequence number for the result
     var docInfos = userDocs.map(function(doc, i) {
@@ -3657,6 +3737,7 @@ var IdbPouch = function(opts, callback) {
       }
 
       function finish() {
+        docInfo.data._doc_id_rev = docInfo.data._id + "::" + docInfo.data._rev;
         var dataReq = txn.objectStore(BY_SEQ_STORE).put(docInfo.data);
         dataReq.onsuccess = function(e) {
           if (Pouch.DEBUG) {
@@ -3713,28 +3794,18 @@ var IdbPouch = function(opts, callback) {
     function saveAttachment(docInfo, digest, data, callback) {
       var objectStore = txn.objectStore(ATTACH_STORE);
       var getReq = objectStore.get(digest).onsuccess = function(e) {
+        var originalRefs = e.target.result && e.target.result.refs || {};
         var ref = [docInfo.metadata.id, docInfo.metadata.rev].join('@');
-        var newAtt = {digest: digest, body: data};
-
-        if (e.target.result) {
-          if (e.target.result.refs) {
-            // only update references if this attachment already has them
-            // since we cannot migrate old style attachments here without
-            // doing a full db scan for references
-            newAtt.refs = e.target.result.refs;
-            newAtt.refs[ref] = true;
-          }
-        } else {
-          newAtt.refs = {};
-          newAtt.refs[ref] = true;
-        }
-
+        var newAtt = {
+          digest: digest,
+          body: data,
+          refs: originalRefs
+        };
+        newAtt.refs[ref] = true;
         var putReq = objectStore.put(newAtt).onsuccess = function(e) {
           call(callback);
         };
-        putReq.onerror = putReq.ontimeout = idbError(callback);
       };
-      getReq.onerror = getReq.ontimeout = idbError(callback);
     }
 
     var txn;
@@ -3747,7 +3818,6 @@ var IdbPouch = function(opts, callback) {
 
       processDocs();
     });
-
   };
 
   function sortByBulkSeq(a, b) {
@@ -3776,16 +3846,19 @@ var IdbPouch = function(opts, callback) {
         return;
       }
       if (isDeleted(metadata) && !opts.rev) {
-        result = extend({}, Pouch.Errors.MISSING_DOC, {reason:"deleted"});
+        result = Pouch.error(Pouch.Errors.MISSING_DOC, "deleted");
         return;
       }
 
       var rev = Pouch.merge.winningRev(metadata);
-      var key = opts.rev ? opts.rev : rev;
-      var index = txn.objectStore(BY_SEQ_STORE).index('_rev');
+      var key = metadata.id + '::' + (opts.rev ? opts.rev : rev);
+      var index = txn.objectStore(BY_SEQ_STORE).index('_doc_id_rev');
 
       index.get(key).onsuccess = function(e) {
         var doc = e.target.result;
+        if(doc && doc._doc_id_rev) {
+          delete(doc._doc_id_rev);
+        }
         if (!doc) {
           result = Pouch.Errors.MISSING_DOC;
           return;
@@ -3931,6 +4004,9 @@ var IdbPouch = function(opts, callback) {
         if (opts.include_docs) {
           doc.doc = data;
           doc.doc._rev = Pouch.merge.winningRev(metadata);
+          if (doc.doc._doc_id_rev) {
+              delete(doc.doc._doc_id_rev);
+          }
           if (opts.conflicts) {
             doc.doc._conflicts = collectConflicts(metadata);
           }
@@ -3954,9 +4030,10 @@ var IdbPouch = function(opts, callback) {
       if (!opts.include_docs) {
         allDocsInner(metadata);
       } else {
-        var index = transaction.objectStore(BY_SEQ_STORE).index('_rev');
+        var index = transaction.objectStore(BY_SEQ_STORE).index('_doc_id_rev');
         var mainRev = Pouch.merge.winningRev(metadata);
-        index.get(mainRev).onsuccess = function(event) {
+        var key = metadata.id + "::" + mainRev;
+        index.get(key).onsuccess = function(event) {
           allDocsInner(cursor.value, event.target.result);
         };
       }
@@ -3995,8 +4072,6 @@ var IdbPouch = function(opts, callback) {
     if (Pouch.DEBUG) {
       console.log(name + ': Start Changes Feed: continuous=' + opts.continuous);
     }
-
-    opts = extend(true, {}, opts);
 
     if (!opts.since) {
       opts.since = 0;
@@ -4084,8 +4159,9 @@ var IdbPouch = function(opts, callback) {
         }
 
         var mainRev = Pouch.merge.winningRev(metadata);
-        var index = txn.objectStore(BY_SEQ_STORE).index('_rev');
-        index.get(mainRev).onsuccess = function(docevent) {
+        var key = metadata.id + "::" + mainRev;
+        var index = txn.objectStore(BY_SEQ_STORE).index('_doc_id_rev');
+        index.get(key).onsuccess = function(docevent) {
           var doc = docevent.target.result;
           var changeList = [{rev: mainRev}];
           if (opts.style === 'all_docs') {
@@ -4163,9 +4239,10 @@ var IdbPouch = function(opts, callback) {
 
   api._removeDocRevisions = function(docId, revs, callback) {
     var txn = idb.transaction([BY_SEQ_STORE], IDBTransaction.READ_WRITE);
-    var index = txn.objectStore(BY_SEQ_STORE).index('_rev');
+    var index = txn.objectStore(BY_SEQ_STORE).index('_doc_id_rev');
     revs.forEach(function(rev) {
-      index.getKey(rev).onsuccess = function(e) {
+      var key = docId + "::" + rev;
+      index.getKey(key).onsuccess = function(e) {
         var seq = e.target.result;
         if (!seq) {
           return;
@@ -4261,7 +4338,7 @@ var webSqlPouch = function(opts, callback) {
     var doc = 'CREATE TABLE IF NOT EXISTS ' + DOC_STORE +
       ' (id unique, seq, json, winningseq)';
     var seq = 'CREATE TABLE IF NOT EXISTS ' + BY_SEQ_STORE +
-      ' (seq INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, rev UNIQUE, json)';
+      ' (seq INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, doc_id_rev UNIQUE, json)';
 
     tx.executeSql(attach);
     tx.executeSql(doc);
@@ -4314,7 +4391,7 @@ var webSqlPouch = function(opts, callback) {
   api._bulkDocs = function idb_bulkDocs(req, opts, callback) {
 
     var newEdits = opts.new_edits;
-    var userDocs = extend(true, [], req.docs);
+    var userDocs = req.docs;
 
     // Parse the docs, give them a sequence number for the result
     var docInfos = userDocs.map(function(doc, i) {
@@ -4447,8 +4524,9 @@ var webSqlPouch = function(opts, callback) {
 
       function finish() {
         var data = docInfo.data;
-        var sql = 'INSERT INTO ' + BY_SEQ_STORE + ' (rev, json) VALUES (?, ?);';
-        tx.executeSql(sql, [data._rev, JSON.stringify(data)], dataWritten);
+        var sql = 'INSERT INTO ' + BY_SEQ_STORE + ' (doc_id_rev, json) VALUES (?, ?);';
+        tx.executeSql(sql, [data._id + "::" + data._rev,
+                            JSON.stringify(data)], dataWritten);
       }
 
       function collectResults(attachmentErr) {
@@ -4503,11 +4581,14 @@ var webSqlPouch = function(opts, callback) {
         var mainRev = Pouch.merge.winningRev(docInfo.metadata);
 
         var sql = isUpdate ?
-          'UPDATE ' + DOC_STORE + ' SET seq=?, json=?, winningseq=(SELECT seq FROM ' + BY_SEQ_STORE + ' WHERE rev=?) WHERE id=?' :
+          'UPDATE ' + DOC_STORE + ' SET seq=?, json=?, winningseq=(SELECT seq FROM ' +
+          BY_SEQ_STORE + ' WHERE doc_id_rev=?) WHERE id=?' :
           'INSERT INTO ' + DOC_STORE + ' (id, seq, winningseq, json) VALUES (?, ?, ?, ?);';
+        var metadataStr = JSON.stringify(docInfo.metadata);
+        var key = docInfo.metadata.id + "::" + mainRev;
         var params = isUpdate ?
-          [seq, JSON.stringify(docInfo.metadata), mainRev, docInfo.metadata.id] :
-          [docInfo.metadata.id, seq, seq, JSON.stringify(docInfo.metadata)];
+          [seq, metadataStr, key, docInfo.metadata.id] :
+          [docInfo.metadata.id, seq, seq, metadataStr];
         tx.executeSql(sql, params, function(tx, result) {
           results.push(docInfo);
           call(callback, null);
@@ -4616,13 +4697,14 @@ var webSqlPouch = function(opts, callback) {
         }
         metadata = JSON.parse(results.rows.item(0).json);
         if (isDeleted(metadata) && !opts.rev) {
-          result = extend({}, Pouch.Errors.MISSING_DOC, {reason:"deleted"});
+          result = Pouch.error(Pouch.Errors.MISSING_DOC, "deleted");
           return;
         }
 
         var rev = Pouch.merge.winningRev(metadata);
         var key = opts.rev ? opts.rev : rev;
-        var sql = 'SELECT * FROM ' + BY_SEQ_STORE + ' WHERE rev=?';
+        key = metadata.id + '::' + key;
+        var sql = 'SELECT * FROM ' + BY_SEQ_STORE + ' WHERE doc_id_rev=?';
         tx.executeSql(sql, [key], function(tx, results) {
           if (!results.rows.length) {
             result = Pouch.Errors.MISSING_DOC;
@@ -4741,8 +4823,6 @@ var webSqlPouch = function(opts, callback) {
     if (Pouch.DEBUG) {
       console.log(name + ': Start Changes Feed: continuous=' + opts.continuous);
     }
-
-    opts = extend(true, {}, opts);
 
     if (!opts.since) {
       opts.since = 0;
@@ -4890,8 +4970,9 @@ var webSqlPouch = function(opts, callback) {
   };
   api._removeDocRevisions = function(docId, revs, callback) {
     db.transaction(function (tx) {
-      var sql = 'DELETE FROM ' + BY_SEQ_STORE + ' WHERE rev IN (' +
-        revs.map(function(rev){return quote(rev);}).join(',') + ')';
+      var sql = 'DELETE FROM ' + BY_SEQ_STORE + ' WHERE doc_id_rev IN (' +
+        revs.map(function(rev){return quote(docId + '::' + rev);}).join(',') + ')';
+      console.log(sql);
       tx.executeSql(sql, [], function(tx, result) {
         callback();
       });
