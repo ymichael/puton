@@ -150,6 +150,7 @@ module.exports = function(grunt) {
         'saucelabs-jasmine': {
             all: {
                 username: "puton",
+                key: "bf0dfbb9-38a8-47e6-8402-23d6648179ab",
                 urls: ["http://127.0.0.1:9001"],
                 testname: "Puton Tests",
                 browsers: [
@@ -194,6 +195,8 @@ module.exports = function(grunt) {
 
     // saucelabs
     grunt.registerTask("saucelabs", ["connect:test", "saucelabs-jasmine"]);
+
+    // travis
     grunt.registerTask("test-travis", ["default", "saucelabs"]);
 
     grunt.registerTask("build:lib", ['concat:lib', 'uglify:lib']);
