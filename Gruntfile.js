@@ -99,6 +99,19 @@ module.exports = function(grunt) {
                     base: "."
                 }
             },
+            test: {
+                options: {
+                    port: 9001,
+                    base: "spec",
+                    middleware: function(connect, options) {
+                        return [
+                            connect.static('public'),
+                            connect.static('spec'),
+                            connect.directory(options.base)
+                        ];
+                    }
+                }
+            },
             server: {
                 options: {
                     port: 9001,
@@ -133,6 +146,27 @@ module.exports = function(grunt) {
             updatejQuery: {
                 cmd: 'curl -o public/js/libs/jquery.js http://code.jquery.com/jquery.js'
             }
+        },
+        'saucelabs-jasmine': {
+            all: {
+                username: "puton",
+                urls: ["http://127.0.0.1:9001"],
+                testname: "Puton Tests",
+                browsers: [
+                    {
+                        browserName: 'chrome',
+                        platform: 'Windows 2003',
+                        name: 'win2003/chrome',
+                        'chrome.switches' : ['disable-file-system']
+                    },
+                    {
+                        browserName: 'firefox',
+                        version: '19',
+                        platform: 'Linux',
+                        name: 'linux/firefox'
+                    }
+                ]
+            }
         }
     });
 
@@ -156,6 +190,7 @@ module.exports = function(grunt) {
     grunt.registerTask("release", ['lint','updatepouch', 'build', 'minify']);
     grunt.registerTask("default", ['release']);
     grunt.registerTask("run", ['exec:default']);
+    grunt.registerTask("test-travis", ["default", "saucelabs-jasmine"]);
 
 
     grunt.registerTask("build:lib", ['concat:lib', 'uglify:lib']);
