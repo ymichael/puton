@@ -1,6 +1,8 @@
 # Puton (Futon for PouchDB)
 [![Nodejitsu Deploy Status Badges](https://webhooks.nodejitsu.com/ymichael/puton.png)](https://webops.nodejitsu.com#nodejitsu/webhooks)
 
+[![Build Status](https://travis-ci.org/ymichael/puton.png)](https://travis-ci.org/ymichael/puton)
+
 Puton is to [PouchDB][1] what Futon is to [CouchDB][2].
 
 The general idea is to provide a simple way to inspect a browser's `PouchDB`.
