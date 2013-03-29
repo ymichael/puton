@@ -150,6 +150,7 @@ module.exports = function(grunt) {
         'saucelabs-jasmine': {
             all: {
                 username: "puton",
+                key: "bf0dfbb9-38a8-47e6-8402-23d6648179ab",
                 urls: ["http://127.0.0.1:9001"],
                 testname: "Puton Tests",
                 browsers: [
