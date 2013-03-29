@@ -191,8 +191,10 @@ module.exports = function(grunt) {
     grunt.registerTask("release", ['lint','updatepouch', 'build', 'minify']);
     grunt.registerTask("default", ['release']);
     grunt.registerTask("run", ['exec:default']);
-    grunt.registerTask("test-travis", ["default", "saucelabs-jasmine"]);
 
+    // saucelabs
+    grunt.registerTask("saucelabs", ["connect:test", "saucelabs-jasmine"]);
+    grunt.registerTask("test-travis", ["default", "saucelabs"]);
 
     grunt.registerTask("build:lib", ['concat:lib', 'uglify:lib']);
     grunt.registerTask("build:all", ['build:lib', 'build', 'minify']);
