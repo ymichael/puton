@@ -75,3 +75,15 @@ describe("Main Application View", function() {
         expect(eventTriggered).toBe(true);
     });
 });
+
+describe("DB View", function() {
+
+});
+
+describe("Documents View", function() {
+
+});
+
+describe("Document View", function() {
+
+});

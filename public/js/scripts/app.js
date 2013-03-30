@@ -5,7 +5,6 @@ window.Puton = (function() {
     // Global Puton Object
     //
     var Puton = {};
-    Puton.utils = utils;
     Puton = function() {
         if (Puton._app) {
             Puton._app.show();
@@ -14,6 +13,8 @@ window.Puton = (function() {
         Puton._app = new Puton.app();
         Puton._app.start();
     };
+
+    Puton.utils = utils;
 
     //
     // Main Application
@@ -408,7 +409,6 @@ window.Puton = (function() {
             this.listenTo(this.collection, "remove", this.render);
         },
         render: function() {
-
             var fragment = document.createDocumentFragment();
             this.collection.each(function(doc){
                 var docview = new v.Document({
