@@ -1,4 +1,5 @@
 /* .jshintrc eval:ignore */
+Pouch.enableAllDbs = true;
 window.Puton = (function() {
     //
     // Global Puton Object
