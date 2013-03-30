@@ -63,20 +63,15 @@ describe("Main Application View", function() {
         });
     });
 
-    it("should trigger a selectDB event when a database is selected", function() {
-    });
-
     it("should trigger a selectDB event when a database is clicked", function() {
         var eventTriggered;
-        $("body").on('selectDB', function() {
+        mainView.$el.on('selectDB', function() {
             eventTriggered = true;
         });
-        mainView.$el.hide();
-        $("body").append(mainView.el);
-        var $li = mainView.$('.puton-dbname')[0];
-        $li.click();
+
+        var li = mainView.$('.puton-dbname')[0];
+        $(li).trigger("click");
 
         expect(eventTriggered).toBe(true);
-        mainView.$el.remove();
     });
 });
