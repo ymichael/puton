@@ -4,10 +4,14 @@ module.exports = function(grunt) {
         'public/js/libs/jquery.tree.js',
         'public/js/libs/underscore.js',
         'public/js/libs/codemirror.js',
-        'public/js/libs/backbone.js',
+        'public/js/libs/backbone.js'
+    ];
+    
+    var pouch = [
         'public/js/libs/pouch.js',
         'public/js/libs/pouchdb.visualizeRevTree.js'
-    ];
+    ]
+
     var sourceFiles = [
         // templates
         'public/js/templates/template.js',
@@ -43,13 +47,24 @@ module.exports = function(grunt) {
                 src: libFiles,
                 dest: 'public/dist/debug/lib.js'
             },
+            pouch: {
+                src: pouch,
+                dest: 'public/dist/debug/pouch.js'
+            },
             // combine minified pouch with minifed lib
             fulldist: {
-                src: ['public/dist/debug/lib.min.js', 'public/dist/debug/scripts.min.js'],
+                src: ['public/dist/debug/lib.min.js', 'public/dist/debug/pouch.min.js', 'public/dist/debug/scripts.min.js'],
                 dest: 'public/dist/release/puton.min.js'
             }
         },
         uglify: {
+            pouch: {
+                files: {
+                    'public/dist/debug/pouch.min.js': [
+                        'public/dist/debug/pouch.js'
+                    ]
+                }
+            },
             dist: {
                 files: {
                     'public/dist/debug/scripts.min.js': [
@@ -185,7 +200,7 @@ module.exports = function(grunt) {
     grunt.registerTask('lint', ['jshint']);
     grunt.registerTask('test', ['jasmine']);
     grunt.registerTask('browser', ['connect:server']);
-    grunt.registerTask('build', ['concat:dist', 'uglify:dist', 'concat:fulldist', 'less:release']);
+    grunt.registerTask('build', ['concat:pouch', 'uglify:pouch', 'concat:dist', 'uglify:dist', 'concat:fulldist', 'less:release']);
     grunt.registerTask("minify", ['cssmin']);
     grunt.registerTask("updatelibs", ['exec:updateBackbone', 'exec:updateUnderscore', 'exec:updatejQuery', 'build:lib']);
     grunt.registerTask("updatepouch", ['exec:updatePouch']);
