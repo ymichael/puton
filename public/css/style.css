@@ -13,6 +13,12 @@
   padding: 50px;
   font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
+#puton #puton-heading {
+  cursor: pointer;
+}
+#puton #puton-heading:hover {
+  text-decoration: underline;
+}
 #puton #puton-hide-button {
   position: absolute;
   top: 30px;
@@ -27,7 +33,7 @@
 #puton h3,
 #puton h4,
 #puton h5 {
-  margin: 15px 0;
+  margin: 5px 0;
   color: #2f2f2f;
 }
 #puton .puton-section {
@@ -81,46 +87,62 @@
   color: black;
   border-left: solid 15px #a51805;
 }
-#puton .doc {
-  border: solid 1px #eee;
-  margin: 5px 0;
-  padding: 10px;
+#puton #puton-dbname {
+  display: inline-block;
 }
-#puton .optionsbar {
-  text-align: right;
-  color: #444;
+#puton .puton-dbinfo {
+  margin: 0 10px;
+  display: inline-block;
 }
-#puton .option {
+#puton .puton-doc {
+  width: 500px;
+  padding: 10px 0;
+  margin: 10px 0;
+}
+#puton .puton-doc .puton-doc-key,
+#puton .puton-doc .puton-json-view,
+#puton .puton-doc .puton-doc-optionsbar {
+  font: 15px 'Source Code Pro', sans-serif;
+}
+#puton .puton-doc .puton-doc-key {
+  display: inline-block;
+  margin-right: 10px;
+}
+#puton .puton-doc .puton-doc-optionsbar {
+  display: block;
+  margin: 5px 0 10px;
+}
+#puton .puton-doc .puton-doc-optionsbar .option {
+  border: solid 1px;
+  border-radius: 5px;
+  padding: 2px 5px;
   cursor: pointer;
+  color: #555555;
 }
-#puton .option:hover {
-  text-decoration: underline;
+#puton .puton-doc .puton-doc-optionsbar .option:hover {
+  color: #839496;
 }
-#puton .key,
-#puton .value {
-  font-size: 13px;
+#puton .puton-doc .puton-json-view {
+  background-color: #fdf6e3;
+  color: #b58900;
+  outline: 1px solid #ccc;
+  padding: 5px;
+  margin: 5px 0;
+  display: block;
 }
-#puton .value {
-  color: #888;
+#puton .puton-doc .puton-json-view .string {
+  color: #2aa198;
+}
+#puton .puton-doc .puton-json-view .number {
+  color: #d33682;
+}
+#puton .puton-doc .puton-json-view .boolean {
+  color: #cb4b16;
 }
 #puton .code-edit {
   width: 100%;
   height: 80px;
   border: 1px solid #888;
-}
-#puton pre.value {
-  outline: 1px solid #ccc;
-  padding: 5px;
-  margin: 5px;
-}
-#puton .string {
-  color: green;
-}
-#puton .number {
-  color: darkorange;
-}
-#puton .boolean {
-  color: blue;
 }
 #puton .docs {
   position: relative;
@@ -129,9 +151,6 @@
   position: absolute;
   left: 530px;
   top: 0px;
-}
-#puton .docs .docs-container {
-  width: 500px;
 }
 #puton #puton-toolbar {
   text-align: right;

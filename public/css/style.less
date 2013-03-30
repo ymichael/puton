@@ -15,6 +15,13 @@
     padding: 50px;
     font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
 
+    #puton-heading {
+        cursor: pointer;
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
     #puton-hide-button {
         position: absolute;
         top: 30px;
@@ -26,8 +33,8 @@
     }
 
     h1, h2, h3, h4, h5 {
-      margin: 15px 0;
-      color: darken(@fontcolor, 15);
+        margin: 5px 0;
+        color: darken(@fontcolor, 15);
     }
 
     .puton-section {
@@ -86,29 +93,60 @@
         }
     }
 
-
-    .doc {
-        border: solid 1px #eee;
-        margin: 5px 0;
-        padding: 10px;
+    // DB View
+    #puton-dbname {
+        display: inline-block;
+    }
+    .puton-dbinfo {
+        margin: 0 10px;
+        display: inline-block;
     }
 
-    .optionsbar {
-        text-align: right;
-        color: #444;
-    }
-    .option {
-        cursor: pointer;
-    }
-    .option:hover {
-        text-decoration: underline;
-    }
-
-    .key, .value {
-        font-size: 13px;
-    }
-    .value {
-        color: #888;
+    .puton-doc {
+        width: 500px;
+        padding: 10px 0;
+        margin: 10px 0;
+        //
+        // Expanded Doc's JSON View
+        //
+        .puton-doc-key, .puton-json-view, .puton-doc-optionsbar {
+            font: 15px 'Source Code Pro', sans-serif;
+        }
+        .puton-doc-key {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .puton-doc-optionsbar {
+            display: block;
+            margin: 5px 0 10px;
+            .option {
+                border: solid 1px;
+                border-radius: 5px;
+                padding: 2px 5px;
+                cursor: pointer;
+                color: @fontcolor;
+                &:hover {
+                    color: #839496;
+                }
+            }
+        }
+        .puton-json-view {
+            background-color: #fdf6e3;
+            color: #b58900;
+            outline: 1px solid #ccc;
+            padding: 5px;
+            margin: 5px 0;
+            display: block;
+            .string {
+                color: #2aa198;
+            }
+            .number {
+                color: #d33682;
+            }
+            .boolean {
+                color: #cb4b16;
+            }
+        }
     }
     .code-edit {
         width: 100%;
@@ -116,10 +154,6 @@
         border: 1px solid #888;
     }
 
-    pre.value {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
-    .string { color: green; }
-    .number { color: darkorange; }
-    .boolean { color: blue; }
 
     #puton-main {
         
@@ -127,14 +161,10 @@
 
     .docs {
         position: relative;
-
         #puton-revs-container {
             position: absolute;
             left: 530px;
             top: 0px;
-        }
-        .docs-container {
-            width: 500px;   
         }
     }
 
@@ -143,9 +173,9 @@
         margin-bottom: 20px;
         width: 500px;
     }
-        #puton-toolbar a {
-            margin-left: 12px;
-        }
+    #puton-toolbar a {
+        margin-left: 12px;
+    }
     .button {
         cursor: pointer;
     }
@@ -186,6 +216,9 @@
         font-size: 1.2em;
     }
 
+    //
+    // jqtree
+    //
     ul.jqtree-tree {
         margin-left: 12px;
     }

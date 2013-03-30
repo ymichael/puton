@@ -4,7 +4,7 @@
 var tmpl = {};
 
 tmpl.app = "\
-<h1>Puton</h1>\
+<h1 id='puton-heading'>Puton</h1>\
 <div id='puton-main'>\
 </div>\
 <a id='puton-hide-button'>Close</a>\
@@ -44,26 +44,38 @@ tmpl.log = "\
     <%- log %>\
 </p>";
 
+tmpl.db = "\
+<h2 id='puton-dbname'><%- db_name %></h2>\
+<p class='puton-dbinfo'>\
+    &middot;\
+    <b>doc_count: </b>\
+    <%- doc_count %>\
+    &middot;\
+    <b>update_seq: </b>\
+    <%- update_seq %>\
+</p>\
+<div id='puton-toolbar'>\
+</div>\
+<div id='tabs'>\
+    <div class='docs'></div>\
+</div>";
 
 tmpl.doc_full = "\
-<div class='optionsbar'>\
-    <a class='option revtreeoption'>rev-tree</a>\
-    &nbsp;|&nbsp;\
-    <a class='option revoption'>rev-list</a>\
-    &nbsp;|&nbsp;\
-    <a class='option editoption'>edit</a>\
-    &nbsp;|&nbsp;\
-    <a class='option deleteoption'>delete</a>\
+<h3 class='puton-doc-key'><%- key %></h3>\
+<div class='puton-doc-optionsbar'>\
+<a class='option revtreeoption'>rev-tree</a>&nbsp;\
+<a class='option revoption'>rev-list</a>&nbsp;\
+<a class='option editoption'>edit</a>&nbsp;\
+<a class='option deleteoption'>delete</a>\
 </div>\
-<h3 class='key'><%- key %></h3>\
-<pre class='value'><%= value %></pre>";
+<pre class='puton-json-view'><%= value %></pre>";
 
 tmpl.doc_collapsed = "\
-<span class='key'><%- key %></span>\
-&nbsp;\
-<span class='value'><%- trunc %></span>";
+<h3 class='puton-doc-key'><%- key %></h3>\
+<span class='puton-json-view'><%- trunc %></span>";
 
 tmpl.doc_edit = "\
+<h3 class='puton-doc-key'><%- key %></h3>\
 <textarea class='code-edit' name='code'><%= code %></textarea>\
 <button class='code-edit-save'>Save</button>";
 
@@ -78,43 +90,22 @@ tmpl.queryInput = "\
     Reduce: \
     <textarea class='code-edit code-reduce' name='reduce'></textarea>\
     <button class='run'>Run Query</button>\
-    <div class='docs'></div>\
-    \
-";
-
-tmpl.db = "\
-    <h2><%- db_name %></h2>\
-    <small>(database name)</small>\
-    <p>\
-        <b>doc_count: </b>\
-        <%- doc_count %>\
-    </p>\
-    <p>\
-        <b>update_seq: </b>\
-        <%- update_seq %>\
-    </p>\
-    <div id='puton-toolbar'>\
-    </div>\
-    <div id='tabs'>\
-    <div class='docs'></div>\
-    </div>\
-";
+    <div class='docs'></div>";
 
 tmpl.toolbar = "\
-    <a class='button' id='query'>Run Query</a>\
-    <a class='button' id='adddoc'>Add document</a>\
-    <div id='puton-tabbuttons'></div>\
-";
+<a class='button' id='query'>Run Query</a>\
+<a class='button' id='adddoc'>Add document</a>\
+<div id='puton-tabbuttons'></div>";
 
 tmpl.documents = "\
-    <div class='docs-container'></div>\
-    <div id='puton-revs-container'></div>\
-";
+<div class='docs-container'></div>\
+<div id='puton-revs-container'></div>";
+
 tmpl.revisions = "<div class='revisions'></div>";
+
 tmpl.rev_full = "\
-    <h3 class='key'><%- key %></h3>\
-    <pre class='value'><%= value %></pre>\
-";
+<h3 class='key'><%- key %></h3>\
+<pre class='value'><%= value %></pre>";
 
 tmpl.tabbutton = "<a class='tabbutton><%- label %></a>";
 
@@ -151,12 +142,12 @@ utils.syntaxHighlight = function(json, nohtml) {
 };
 
 /* .jshintrc eval:ignore */
+Pouch.enableAllDbs = true;
 window.Puton = (function() {
     //
     // Global Puton Object
     //
     var Puton = {};
-    Puton.utils = utils;
     Puton = function() {
         if (Puton._app) {
             Puton._app.show();
@@ -165,6 +156,8 @@ window.Puton = (function() {
         Puton._app = new Puton.app();
         Puton._app.start();
     };
+
+    Puton.utils = utils;
 
     //
     // Main Application
@@ -210,11 +203,7 @@ window.Puton = (function() {
                     return;
                 }
 
-                // tmp.
-                window.db = db;
-
                 var database = new m.DB(null, {db: db});
-
                 that.changeView(null, database);
             });
         },
@@ -559,7 +548,6 @@ window.Puton = (function() {
             this.listenTo(this.collection, "remove", this.render);
         },
         render: function() {
-
             var fragment = document.createDocumentFragment();
             this.collection.each(function(doc){
                 var docview = new v.Document({
@@ -664,7 +652,7 @@ window.Puton = (function() {
     });
 
     v.Document = Backbone.View.extend({
-        className: "doc",
+        className: "puton-doc",
         initialize: function(opts) {
             this.show = "collapsed";
             this.db = opts.db;
@@ -674,7 +662,7 @@ window.Puton = (function() {
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
                     key: model.toJSON().key || this.model.id,
-                    trunc: JSON.stringify(model.toJSON()).substring(0, 20) + "..."
+                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
                 }));
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
@@ -693,6 +681,7 @@ window.Puton = (function() {
                     }
                 });
                 this.$el.html(tmpl.doc_edit({
+                    key: model.toJSON().key || this.model.id,
                     code: JSON.stringify(modelJson, undefined, 2)
                 }));
                 this.codeEdit = CodeMirror.fromTextArea(this.$el.find('.code-edit').get(0),{

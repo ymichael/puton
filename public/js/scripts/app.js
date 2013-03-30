@@ -60,11 +60,7 @@ window.Puton = (function() {
                     return;
                 }
 
-                // tmp.
-                window.db = db;
-
                 var database = new m.DB(null, {db: db});
-
                 that.changeView(null, database);
             });
         },
@@ -513,7 +509,7 @@ window.Puton = (function() {
     });
 
     v.Document = Backbone.View.extend({
-        className: "doc",
+        className: "puton-doc",
         initialize: function(opts) {
             this.show = "collapsed";
             this.db = opts.db;
@@ -523,7 +519,7 @@ window.Puton = (function() {
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
                     key: model.toJSON().key || this.model.id,
-                    trunc: JSON.stringify(model.toJSON()).substring(0, 20) + "..."
+                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
                 }));
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
@@ -542,6 +538,7 @@ window.Puton = (function() {
                     }
                 });
                 this.$el.html(tmpl.doc_edit({
+                    key: model.toJSON().key || this.model.id,
                     code: JSON.stringify(modelJson, undefined, 2)
                 }));
                 this.codeEdit = CodeMirror.fromTextArea(this.$el.find('.code-edit').get(0),{
