@@ -797,36 +797,49 @@ Pouch.destroy = function(name, callback) {
     // call destroy method of the particular adaptor
     Pouch.adapters[opts.adapter].destroy(opts.name, callback);
   };
+ 
+  // remove Pouch from allDBs
+  Pouch.removeFromAllDbs(opts, cb);
+};
+
+Pouch.removeFromAllDbs = function(opts, callback) {
+  // Only execute function if flag is enabled
+  if (!Pouch.enableAllDbs) {
+    callback();
+    return;
+  }
 
   // skip http and https adaptors for allDbs
   var adapter = opts.adapter;
   if (adapter === "http" || adapter === "https") {
-    cb();
+    callback();
     return;
   }
 
   // remove db from Pouch.ALL_DBS
   new Pouch(Pouch.allDBName(opts.adapter), function(err, db) {
     if (err) {
-      callback(err);
+      // don't fail when allDbs fail
+      console.log(err);
+      callback();
       return;
     }
     // check if db has been registered in Pouch.ALL_DBS
     var dbname = Pouch.dbName(opts.adapter, opts.name);
     db.get(dbname, function(err, doc) {
       if (err) {
-        if (err.status === 404) {
-          cb();
-        } else {
-          cb(err);
-        }
+        callback();
       } else {
         db.remove(doc, function(err, response) {
-            cb(err);
+          if (err) {
+            console.log(err);
+          }
+          callback();
         });
       }
     });
   });
+ 
 };
 
 Pouch.adapter = function (id, obj) {
@@ -838,6 +851,9 @@ Pouch.adapter = function (id, obj) {
 Pouch.plugin = function(id, obj) {
   Pouch.plugins[id] = obj;
 };
+
+// flag to toggle allDbs (off by default)
+Pouch.enableAllDbs = false;
 
 // name of database used to keep track of databases
 Pouch.ALL_DBS = "_allDbs";
@@ -852,6 +868,12 @@ Pouch.allDBName = function(adapter) {
 };
 
 Pouch.open = function(opts, callback) {
+  // Only register pouch with allDbs if flag is enabled
+  if (!Pouch.enableAllDbs) {
+    callback();
+    return;
+  }
+
   var adapter = opts.adapter;
   // skip http and https adaptors for allDbs
   if (adapter === "http" || adapter === "https") {
@@ -861,22 +883,26 @@ Pouch.open = function(opts, callback) {
 
   new Pouch(Pouch.allDBName(adapter), function(err, db) {
     if (err) {
-      callback(err);
+      // don't fail when allDb registration fails
+      console.log(err);
+      callback();
       return;
     }
 
     // check if db has been registered in Pouch.ALL_DBS
     var dbname = Pouch.dbName(adapter, opts.name);
     db.get(dbname, function(err, response) {
-      if (err) {
-        if (err.status === 404) {
-          db.put({
-            _id: dbname,
-            dbname: opts.originalName 
-          }, callback);
-        } else {
-          callback(err);
-        }
+      if (err && err.status === 404) {
+        db.put({
+          _id: dbname,
+          dbname: opts.originalName 
+        }, function(err) {
+            if (err) {
+                console.log(err);
+            }
+
+            callback();
+        });
       } else {
         callback();
       }
@@ -1113,7 +1139,7 @@ Pouch.collate = function(a, b) {
     return objectCollate(a, b);
   }
 };
-/*globals rootToLeaf: false, extend: false, traverseRevTree: false */
+/*globals rootToLeaf: false, extend: false */
 
 'use strict';
 
@@ -1135,17 +1161,19 @@ if (typeof module !== 'undefined' && module.exports) {
 //
 // KeyTree = [Path ... ]
 // Path = {pos: position_from_root, ids: Tree}
-// Tree = [Key, [Tree, ...]], in particular single node: [Key, []]
+// Tree = [Key, Opts, [Tree, ...]], in particular single node: [Key, []]
 
 // Turn a path as a flat array into a tree with a single branch
 function pathToTree(path) {
-  var root = [path.shift(), []];
+  var doc = path.shift();
+  var root = [doc.id, doc.opts, []];
   var leaf = root;
   var nleaf;
 
   while (path.length) {
-    nleaf = [path.shift(), []];
-    leaf[1].push(nleaf);
+    doc = path.shift();
+    nleaf = [doc.id, doc.opts, []];
+    leaf[2].push(nleaf);
     leaf = nleaf;
   }
   return root;
@@ -1161,24 +1189,24 @@ function mergeTree(in_tree1, in_tree2) {
     var tree1 = item.tree1;
     var tree2 = item.tree2;
 
-    for (var i = 0; i < tree2[1].length; i++) {
-      if (!tree1[1][0]) {
+    for (var i = 0; i < tree2[2].length; i++) {
+      if (!tree1[2][0]) {
         conflicts = 'new_leaf';
-        tree1[1][0] = tree2[1][i];
+        tree1[2][0] = tree2[2][i];
         continue;
       }
 
       var merged = false;
-      for (var j = 0; j < tree1[1].length; j++) {
-        if (tree1[1][j][0] === tree2[1][i][0]) {
-          queue.push({tree1: tree1[1][j], tree2: tree2[1][i]});
+      for (var j = 0; j < tree1[2].length; j++) {
+        if (tree1[2][j][0] === tree2[2][i][0]) {
+          queue.push({tree1: tree1[2][j], tree2: tree2[2][i]});
           merged = true;
         }
       }
       if (!merged) {
         conflicts = 'new_branch';
-        tree1[1].push(tree2[1][i]);
-        tree1[1].sort();
+        tree1[2].push(tree2[2][i]);
+        tree1[2].sort();
       }
     }
   }
@@ -1229,7 +1257,7 @@ function doMerge(tree, path, dontExpand) {
           continue;
         }
         /*jshint loopfunc:true */
-        item.ids[1].forEach(function(el, idx) {
+        item.ids[2].forEach(function(el, idx) {
           trees.push({ids: el, diff: item.diff-1, parent: item.ids, parentIdx: idx});
         });
       }
@@ -1240,7 +1268,7 @@ function doMerge(tree, path, dontExpand) {
         restree.push(branch);
       } else {
         res = mergeTree(el.ids, t2.ids);
-        el.parent[1][el.parentIdx] = res.tree;
+        el.parent[2][el.parentIdx] = res.tree;
         restree.push({pos: t1.pos, ids: t1.ids});
         conflicts = conflicts || res.conflicts;
         merged = true;
@@ -1300,19 +1328,13 @@ Pouch.merge = function(tree, path, depth) {
 // The final sort algorithm is slightly documented in a sidebar here:
 // http://guide.couchdb.org/draft/conflicts.html
 Pouch.merge.winningRev = function(metadata) {
-  var deletions = metadata.deletions || {};
   var leafs = [];
-
-  traverseRevTree(metadata.rev_tree, function(isLeaf, pos, id) {
+  Pouch.merge.traverseRevTree(metadata.rev_tree,
+                              function(isLeaf, pos, id, something, opts) {
     if (isLeaf) {
-      leafs.push({pos: pos, id: id});
+      leafs.push({pos: pos, id: id, deleted: !!opts.deleted});
     }
   });
-
-  leafs.forEach(function(leaf) {
-    leaf.deleted = leaf.id in deletions;
-  });
-
   leafs.sort(function(a, b) {
     if (a.deleted !== b.deleted) {
       return a.deleted > b.deleted ? 1 : -1;
@@ -1322,7 +1344,60 @@ Pouch.merge.winningRev = function(metadata) {
     }
     return a.id < b.id ? 1 : -1;
   });
+
   return leafs[0].pos + '-' + leafs[0].id;
+};
+
+// Pretty much all below can be combined into a higher order function to
+// traverse revisions
+// Callback has signature function(isLeaf, pos, id, [context])
+// The return value from the callback will be passed as context to all
+// children of that node
+Pouch.merge.traverseRevTree = function(revs, callback) {
+  var toVisit = [];
+
+  revs.forEach(function(tree) {
+    toVisit.push({pos: tree.pos, ids: tree.ids});
+  });
+  while (toVisit.length > 0) {
+    var node = toVisit.pop();
+    var pos = node.pos;
+    var tree = node.ids;
+    var newCtx = callback(tree[2].length === 0, pos, tree[0], node.ctx, tree[1]);
+    /*jshint loopfunc: true */
+    tree[2].forEach(function(branch) {
+      toVisit.push({pos: pos+1, ids: branch, ctx: newCtx});
+    });
+  }
+};
+
+Pouch.merge.collectLeaves = function(revs) {
+  var leaves = [];
+  Pouch.merge.traverseRevTree(revs, function(isLeaf, pos, id, acc, opts) {
+    if (isLeaf) {
+      leaves.unshift({rev: pos + "-" + id, pos: pos, opts: opts});
+    }
+  });
+  leaves.sort(function(a, b) {
+    return b.pos - a.pos;
+  });
+  leaves.map(function(leaf) { delete leaf.pos; });
+  return leaves;
+};
+
+// returns all conflicts that is leaves such that
+// 1. are not deleted and
+// 2. are different than winning revision
+Pouch.merge.collectConflicts = function(metadata) {
+  var win = Pouch.merge.winningRev(metadata);
+  var leaves = Pouch.merge.collectLeaves(metadata.rev_tree);
+  var conflicts = [];
+  leaves.forEach(function(leaf) {
+    if (leaf.rev !== win && !leaf.opts.deleted) {
+      conflicts.push(leaf.rev);
+    }
+  });
+  return conflicts;
 };
 
 
@@ -1389,8 +1464,8 @@ var genReplicationId = function(src, target, opts) {
 };
 
 // A checkpoint lets us restart replications from when they were last cancelled
-var fetchCheckpoint = function(src, id, callback) {
-  src.get(id, function(err, doc) {
+var fetchCheckpoint = function(target, id, callback) {
+  target.get(id, function(err, doc) {
     if (err && err.status === 404) {
       callback(null, 0);
     } else {
@@ -1399,16 +1474,16 @@ var fetchCheckpoint = function(src, id, callback) {
   });
 };
 
-var writeCheckpoint = function(src, id, checkpoint, callback) {
+var writeCheckpoint = function(target, id, checkpoint, callback) {
   var check = {
     _id: id,
     last_seq: checkpoint
   };
-  src.get(check._id, function(err, doc) {
+  target.get(check._id, function(err, doc) {
     if (doc && doc._rev) {
       check._rev = doc._rev;
     }
-    src.put(check, function(err, doc) {
+    target.put(check, function(err, doc) {
       callback();
     });
   });
@@ -1511,13 +1586,13 @@ function replicate(src, target, opts, promise) {
   function isCompleted() {
     if (completed && pending === 0) {
       result.end_time = Date.now();
-      writeCheckpoint(src, repId, last_seq, function(err, res) {
+      writeCheckpoint(target, repId, last_seq, function(err, res) {
         call(opts.complete, err, result);
       });
     }
   }
 
-  fetchCheckpoint(src, repId, function(err, checkpoint) {
+  fetchCheckpoint(target, repId, function(err, checkpoint) {
 
     if (err) {
       return call(opts.complete, err);
@@ -1635,23 +1710,6 @@ var parseDocId = function(id) {
   };
 };
 
-// check if a specific revision of a doc has been deleted
-//  - metadata: the metadata object from the doc store
-//  - rev: (optional) the revision to check. defaults to winning revision
-var isDeleted = function(metadata, rev) {
-  if (!metadata || !metadata.deletions) {
-    return false;
-  }
-  if (!rev) {
-    rev = Pouch.merge.winningRev(metadata);
-  }
-  if (rev.indexOf('-') >= 0) {
-    rev = rev.split('-')[1];
-  }
-
-  return metadata.deletions[rev] === true;
-};
-
 // Determine id an ID is valid
 //   - invalid IDs begin with an underescore that does not begin '_design' or '_local'
 //   - any other string value is a valid id
@@ -1686,6 +1744,10 @@ var parseDoc = function(doc, newEdits) {
   var nRevNum;
   var newRevId;
   var revInfo;
+  var opts = {};
+  if (doc._deleted) {
+    opts.deleted = true;
+  }
 
   if (newEdits) {
     if (!doc._id) {
@@ -1699,13 +1761,13 @@ var parseDoc = function(doc, newEdits) {
       }
       doc._rev_tree = [{
         pos: parseInt(revInfo[1], 10),
-        ids: [revInfo[2], [[newRevId, []]]]
+        ids: [revInfo[2], {}, [[newRevId, opts, []]]]
       }];
       nRevNum = parseInt(revInfo[1], 10) + 1;
     } else {
       doc._rev_tree = [{
         pos: 1,
-        ids : [newRevId, []]
+        ids : [newRevId, opts, []]
       }];
       nRevNum = 1;
     }
@@ -1715,9 +1777,9 @@ var parseDoc = function(doc, newEdits) {
         pos: doc._revisions.start - doc._revisions.ids.length + 1,
         ids: doc._revisions.ids.reduce(function(acc, x) {
           if (acc === null) {
-            return [x, []];
+            return [x, opts, []];
           } else {
-            return [x, [acc]];
+            return [x, {}, [acc]];
           }
         }, null)
       }];
@@ -1730,7 +1792,7 @@ var parseDoc = function(doc, newEdits) {
       newRevId = revInfo[2];
       doc._rev_tree = [{
         pos: parseInt(revInfo[1], 10),
-        ids: [revInfo[2], []]
+        ids: [revInfo[2], {}, []]
       }];
     }
   }
@@ -1776,76 +1838,13 @@ var compareRevs = function(a, b) {
   return (a.rev_tree[0].start < b.rev_tree[0].start ? -1 : 1);
 };
 
-// Pretty much all below can be combined into a higher order function to
-// traverse revisions
-// Callback has signature function(isLeaf, pos, id, [context])
-// The return value from the callback will be passed as context to all children of that node
-var traverseRevTree = function(revs, callback) {
-  var toVisit = [];
-
-  revs.forEach(function(tree) {
-    toVisit.push({pos: tree.pos, ids: tree.ids});
-  });
-
-  while (toVisit.length > 0) {
-    var node = toVisit.pop();
-    var pos = node.pos;
-    var tree = node.ids;
-    var newCtx = callback(tree[1].length === 0, pos, tree[0], node.ctx);
-    /*jshint loopfunc: true */
-    tree[1].forEach(function(branch) {
-      toVisit.push({pos: pos+1, ids: branch, ctx: newCtx});
-    });
-  }
-};
-
-var collectRevs = function(path) {
-  var revs = [];
-
-  traverseRevTree([path], function(isLeaf, pos, id) {
-    revs.push({rev: pos + "-" + id, status: 'available'});
-  });
-
-  return revs;
-};
-
-var collectLeaves = function(revs) {
-  var leaves = [];
-  traverseRevTree(revs, function(isLeaf, pos, id) {
-    if (isLeaf) {
-      leaves.unshift({rev: pos + "-" + id, pos: pos});
-    }
-  });
-  leaves.sort(function(a, b) {
-    return b.pos - a.pos;
-  });
-  leaves.map(function(leaf) { delete leaf.pos; });
-  return leaves;
-};
-
-// returns all conflicts that is leaves such that
-// 1. are not deleted and
-// 2. are different than winning revision
-var collectConflicts = function(metadata) {
-  var win = Pouch.merge.winningRev(metadata);
-  var leaves = collectLeaves(metadata.rev_tree);
-  var conflicts = [];
-  leaves.forEach(function(leaf) {
-    var rev = leaf.rev.split("-")[1]; 
-    if ((!metadata.deletions || !metadata.deletions[rev]) && leaf.rev !== win) {
-      conflicts.push(leaf.rev);
-    } 
-  });
-  return conflicts;
-};
-
 
 // for every node in a revision tree computes its distance from the closest
 // leaf
 var computeHeight = function(revs) {
   var height = {};
   var edges = [];
-  traverseRevTree(revs, function(isLeaf, pos, id, prnt) {
+  Pouch.merge.traverseRevTree(revs, function(isLeaf, pos, id, prnt) {
     var rev = pos + "-" + id;
     if (isLeaf) {
       height[rev] = 0;
@@ -1892,9 +1891,9 @@ var filterChange = function(opts) {
 // [[id, ...], ...]
 var rootToLeaf = function(tree) {
   var paths = [];
-  traverseRevTree(tree, function(isLeaf, pos, id, history) {
+  Pouch.merge.traverseRevTree(tree, function(isLeaf, pos, id, history, opts) {
     history = history ? history.slice(0) : [];
-    history.push(id);
+    history.push({id: id, opts: opts});
     if (isLeaf) {
       var rootPos = pos + 1 - history.length;
       paths.unshift({pos: rootPos, ids: history});
@@ -1902,6 +1901,26 @@ var rootToLeaf = function(tree) {
     return history;
   });
   return paths;
+};
+
+// check if a specific revision of a doc has been deleted
+//  - metadata: the metadata object from the doc store
+//  - rev: (optional) the revision to check. defaults to winning revision
+var isDeleted = function(metadata, rev) {
+  if (!rev) {
+    rev = Pouch.merge.winningRev(metadata);
+  }
+  if (rev.indexOf('-') >= 0) {
+    rev = rev.split('-')[1];
+  }
+  var deleted = false;
+  Pouch.merge.traverseRevTree(metadata.rev_tree, function(isLeaf, pos, id, acc, opts) {
+    if (id === rev) {
+      deleted = !!opts.deleted;
+    }
+  });
+
+  return deleted;
 };
 
 var isChromeApp = function(){
@@ -1933,9 +1952,6 @@ if (typeof module !== 'undefined' && module.exports) {
     parseDoc: parseDoc,
     isDeleted: isDeleted,
     compareRevs: compareRevs,
-    collectRevs: collectRevs,
-    collectLeaves: collectLeaves,
-    collectConflicts: collectConflicts,
     computeHeight: computeHeight,
     arrayFirst: arrayFirst,
     filterChange: filterChange,
@@ -1947,7 +1963,6 @@ if (typeof module !== 'undefined' && module.exports) {
     },
     extend: extend,
     ajax: ajax,
-    traverseRevTree: traverseRevTree,
     rootToLeaf: rootToLeaf,
     isChromeApp: isChromeApp
   };
@@ -1999,7 +2014,7 @@ var Changes = function() {
 
   api.notify = function(db_name) {
     if (!listeners[db_name]) { return; }
-    
+
     Object.keys(listeners[db_name]).forEach(function (i) {
       var opts = listeners[db_name][i].opts;
       listeners[db_name][i].db.changes({
@@ -2023,8 +2038,8 @@ var Changes = function() {
 };
 
 
-/*globals Pouch: true, yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false, collectLeaves: false */
-/*globals collectConflicts: false, arrayFirst: false, rootToLeaf: false, computeHeight: false */
+/*globals Pouch: true, yankError: false, extend: false, call: false, parseDocId: false, traverseRevTree: false */
+/*globals arrayFirst: false, rootToLeaf: false, computeHeight: false */
 
 "use strict";
 
@@ -2301,7 +2316,7 @@ var PouchAdapter = function(opts, callback) {
             // situation the same way as if revision tree was empty
             rev_tree = [];
           }
-          leaves = collectLeaves(rev_tree).map(function(leaf){
+          leaves = Pouch.merge.collectLeaves(rev_tree).map(function(leaf){
             return leaf.rev;
           });
           finishOpenRevs();
@@ -2341,14 +2356,18 @@ var PouchAdapter = function(opts, callback) {
       }
 
       if (opts.conflicts) {
-        var conflicts = collectConflicts(metadata);
+        var conflicts = Pouch.merge.collectConflicts(metadata);
         if (conflicts.length) {
           doc._conflicts = conflicts;
         }
       }
 
       if (opts.revs || opts.revs_info) {
-        var path = arrayFirst(rootToLeaf(metadata.rev_tree), function(arr) {
+        var paths = rootToLeaf(metadata.rev_tree);
+        paths.map(function(path, i) {
+          paths[i].ids = path.ids.map(function(x) { return x.id; });
+        });
+        var path = arrayFirst(paths, function(arr) {
           return arr.ids.indexOf(doc._rev.split('-')[1]) !== -1;
         });
         path.ids.splice(path.ids.indexOf(doc._rev.split('-')[1]) + 1);
@@ -2391,7 +2410,7 @@ var PouchAdapter = function(opts, callback) {
       } else {
         finish();
       }
-      
+
     });
   };
 
@@ -3388,8 +3407,7 @@ Pouch.adapter('http', HttpPouch);
 Pouch.adapter('https', HttpPouch);
 
 /*globals call: false, extend: false, parseDoc: false, Crypto: false */
-/*globals isLocalId: false, isDeleted: false, collectConflicts: false */
-/*globals collectLeaves: false, Changes: false */
+/*globals isLocalId: false, isDeleted: false, Changes: false */
 
 'use strict';
 
@@ -3467,10 +3485,18 @@ var IdbPouch = function(opts, callback) {
     console.log(name + ': Open Database');
   }
 
-  // TODO: before we release, make sure we write upgrade needed
-  // in a way that supports a future upgrade path
   req.onupgradeneeded = function(e) {
     var db = e.target.result;
+    var currentVersion = e.oldVersion;
+    while (currentVersion !== e.newVersion) {
+      if (currentVersion === 0) {
+        createSchema(db);
+      }
+      currentVersion++;
+    }
+  };
+
+  function createSchema(db) {
     db.createObjectStore(DOC_STORE, {keyPath : 'id'})
       .createIndex('seq', 'seq', {unique: true});
     db.createObjectStore(BY_SEQ_STORE, {autoIncrement : true})
@@ -3478,7 +3504,7 @@ var IdbPouch = function(opts, callback) {
     db.createObjectStore(ATTACH_STORE, {keyPath: 'digest'});
     db.createObjectStore(META_STORE, {keyPath: 'id', autoIncrement: false});
     db.createObjectStore(DETECT_BLOB_SUPPORT_STORE);
-  };
+  }
 
   req.onsuccess = function(e) {
 
@@ -3549,7 +3575,6 @@ var IdbPouch = function(opts, callback) {
   };
 
   api._bulkDocs = function idb_bulkDocs(req, opts, callback) {
-
     var newEdits = opts.new_edits;
     var userDocs = req.docs;
 
@@ -3557,12 +3582,6 @@ var IdbPouch = function(opts, callback) {
     var docInfos = userDocs.map(function(doc, i) {
       var newDoc = parseDoc(doc, newEdits);
       newDoc._bulk_seq = i;
-      if (doc._deleted) {
-        if (!newDoc.metadata.deletions) {
-          newDoc.metadata.deletions = {};
-        }
-        newDoc.metadata.deletions[doc._rev.split('-')[1]] = true;
-      }
       return newDoc;
     });
 
@@ -3760,12 +3779,10 @@ var IdbPouch = function(opts, callback) {
     }
 
     function updateDoc(oldDoc, docInfo) {
-      docInfo.metadata.deletions = extend(docInfo.metadata.deletions, oldDoc.deletions);
-
       var merged = Pouch.merge(oldDoc.rev_tree, docInfo.metadata.rev_tree[0], 1000);
-
-      var inConflict = (isDeleted(oldDoc) && isDeleted(docInfo.metadata)) ||
-        (!isDeleted(oldDoc) && newEdits && merged.conflicts !== 'new_leaf');
+      var wasPreviouslyDeleted = isDeleted(oldDoc);
+      var inConflict = (wasPreviouslyDeleted && isDeleted(docInfo.metadata)) ||
+        (!wasPreviouslyDeleted && newEdits && merged.conflicts !== 'new_leaf');
 
       if (inConflict) {
         results.push(makeErr(Pouch.Errors.REV_CONFLICT, docInfo._bulk_seq));
@@ -4008,7 +4025,8 @@ var IdbPouch = function(opts, callback) {
               delete(doc.doc._doc_id_rev);
           }
           if (opts.conflicts) {
-            doc.doc._conflicts = collectConflicts(metadata);
+            doc.doc._conflicts = Pouch.merge.collectConflicts(metadata)
+              .map(function(x) { return x.id; });
           }
         }
         if ('keys' in opts) {
@@ -4142,9 +4160,11 @@ var IdbPouch = function(opts, callback) {
       var cursor = event.target.result;
 
       // Try to pre-emptively dedup to save us a bunch of idb calls
-      var changeId = cursor.value._id, changeIdIndex = resultIndices[changeId];
+      var changeId = cursor.value._id;
+      var changeIdIndex = resultIndices[changeId];
       if (changeIdIndex !== undefined) {
-        results[changeIdIndex].seq = cursor.key; // update so it has the later sequence number
+        results[changeIdIndex].seq = cursor.key;
+        // update so it has the later sequence number
         results.push(results[changeIdIndex]);
         results[changeIdIndex] = null;
         resultIndices[changeId] = results.length - 1;
@@ -4165,8 +4185,8 @@ var IdbPouch = function(opts, callback) {
           var doc = docevent.target.result;
           var changeList = [{rev: mainRev}];
           if (opts.style === 'all_docs') {
-          //  console.log('all docs', changeList, collectLeaves(metadata.rev_tree));
-            changeList = collectLeaves(metadata.rev_tree);
+            changeList = Pouch.merge.collectLeaves(metadata.rev_tree)
+              .map(function(x) { return {rev: x.rev}; });
           }
           var change = {
             id: metadata.id,
@@ -4174,11 +4194,13 @@ var IdbPouch = function(opts, callback) {
             changes: changeList,
             doc: doc
           };
+
           if (isDeleted(metadata, mainRev)) {
             change.deleted = true;
           }
           if (opts.conflicts) {
-            change.doc._conflicts = collectConflicts(metadata);
+            change.doc._conflicts = Pouch.merge.collectConflicts(metadata)
+              .map(function(x) { return x.id; });
           }
 
           // Dedupe the changes feed
@@ -4282,8 +4304,7 @@ IdbPouch.Changes = new Changes();
 Pouch.adapter('idb', IdbPouch);
 
 /*globals call: false, extend: false, parseDoc: false, Crypto: false */
-/*globals isLocalId: false, isDeleted: false, collectConflicts: false */
-/*globals collectLeaves: false, Changes: false */
+/*globals isLocalId: false, isDeleted: false, Changes: false */
 
 'use strict';
 
@@ -4397,12 +4418,6 @@ var webSqlPouch = function(opts, callback) {
     var docInfos = userDocs.map(function(doc, i) {
       var newDoc = parseDoc(doc, newEdits);
       newDoc._bulk_seq = i;
-      if (doc._deleted) {
-        if (!newDoc.metadata.deletions) {
-          newDoc.metadata.deletions = {};
-        }
-        newDoc.metadata.deletions[doc._rev.split('-')[1]] = true;
-      }
       return newDoc;
     });
 
@@ -4597,8 +4612,6 @@ var webSqlPouch = function(opts, callback) {
     }
 
     function updateDoc(oldDoc, docInfo) {
-      docInfo.metadata.deletions = extend(docInfo.metadata.deletions, oldDoc.deletions);
-
       var merged = Pouch.merge(oldDoc.rev_tree, docInfo.metadata.rev_tree[0], 1000);
       var inConflict = (isDeleted(oldDoc) && isDeleted(docInfo.metadata)) ||
         (!isDeleted(oldDoc) && newEdits && merged.conflicts !== 'new_leaf');
@@ -4738,6 +4751,13 @@ var webSqlPouch = function(opts, callback) {
     });
   };
 
+  function makeRevs(arr) {
+    return arr.map(function(x) { return {rev: x.rev}; });
+  }
+  function makeIds(arr) {
+    return arr.map(function(x) { return x.id; });
+  }
+
   api._allDocs = function(opts, callback) {
     var results = [];
     var resultsMap = {};
@@ -4779,7 +4799,7 @@ var webSqlPouch = function(opts, callback) {
               doc.doc = data;
               doc.doc._rev = Pouch.merge.winningRev(metadata);
               if (opts.conflicts) {
-                doc.doc._conflicts = collectConflicts(metadata);
+                doc.doc._conflicts = makeIds(Pouch.merge.collectConflicts(metadata));
               }
             }
             if ('keys' in opts) {
@@ -4869,7 +4889,7 @@ var webSqlPouch = function(opts, callback) {
               var change = {
                 id: metadata.id,
                 seq: doc.seq,
-                changes: collectLeaves(metadata.rev_tree),
+                changes: makeRevs(Pouch.merge.collectLeaves(metadata.rev_tree)),
                 doc: JSON.parse(doc.data)
               };
               change.doc._rev = Pouch.merge.winningRev(metadata);
@@ -4877,7 +4897,7 @@ var webSqlPouch = function(opts, callback) {
                 change.deleted = true;
               }
               if (opts.conflicts) {
-                change.doc._conflicts = collectConflicts(metadata);
+                change.doc._conflicts = makeIds(Pouch.merge.collectConflicts(metadata));
               }
               results.push(change);
             }
@@ -5030,6 +5050,9 @@ var MapReduce = function(db) {
       options.reduce = false;
     }
 
+    // Including conflicts
+    options.conflicts = true;
+
     function sum(values) {
       return values.reduce(function(a, b) { return a + b; }, 0);
     }
@@ -5044,11 +5067,12 @@ var MapReduce = function(db) {
         id: current.doc._id,
         key: key,
         value: val
-      }; 
+      };
 
       if (options.startkey && Pouch.collate(key, options.startkey) < 0) return;
       if (options.endkey && Pouch.collate(key, options.endkey) > 0) return;
       if (options.key && Pouch.collate(key, options.key) !== 0) return;
+
       num_started++;
       if (options.include_docs) {
         //in this special case, join on _id (issue #106)
