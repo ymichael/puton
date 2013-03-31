@@ -18,6 +18,7 @@
     "Backbone": true,
     "_": true,
     "$": true,
+    "hljs": true,
     "tmpl": true,
     "CodeMirror": true,
     "utils": true,

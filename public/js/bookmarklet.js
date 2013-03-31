@@ -9,6 +9,7 @@ $(function() {
     };
     loadStyle("css/style.css");
     loadStyle("css/codemirror.css");
+    loadStyle("css/github.css");
    
     //
     // load scripts.
@@ -23,6 +24,7 @@ $(function() {
         "js/libs/jquery.tree.js",
         "js/libs/underscore.js",
         "js/libs/codemirror.js",
+        "js/libs/highlight.js",
         "js/libs/backbone.js",
         "js/libs/pouch.js",
         "js/libs/pouchdb.visualizeRevTree.js",

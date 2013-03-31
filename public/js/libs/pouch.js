@@ -1854,6 +1854,7 @@ var computeHeight = function(revs) {
     }
     return rev;
   });
+
   edges.reverse();
   edges.forEach(function(edge) {
     if (height[edge.from] === undefined) {
@@ -1877,7 +1878,9 @@ var arrayFirst = function(arr, callback) {
 
 var filterChange = function(opts) {
   return function(change) {
-    if (opts.filter && !opts.filter.call(this, change.doc)) {
+    var req = {};
+    req.query = opts.query_params;
+    if (opts.filter && !opts.filter.call(this, change.doc, req)) {
       return;
     }
     if (!opts.include_docs) {
@@ -2024,6 +2027,7 @@ var Changes = function() {
         descending: false,
         filter: opts.filter,
         since: opts.since,
+        query_params: opts.query_params,
         onChange: function(c) {
           if (c.seq > opts.since && !opts.cancelled) {
             opts.since = c.seq;
@@ -3294,7 +3298,9 @@ var HttpPouch = function(opts, callback) {
         // For each change
         res.results.forEach(function(c) {
           var hasFilter = opts.filter && typeof opts.filter === 'function';
-          if (opts.aborted || hasFilter && !opts.filter.apply(this, [c.doc])) {
+          var req = {};
+          req.query = opts.query_params;
+          if (opts.aborted || hasFilter && !opts.filter.apply(this, [c.doc, req])) {
             return;
           }
 
@@ -3407,7 +3413,7 @@ Pouch.adapter('http', HttpPouch);
 Pouch.adapter('https', HttpPouch);
 
 /*globals call: false, extend: false, parseDoc: false, Crypto: false */
-/*globals isLocalId: false, isDeleted: false, Changes: false */
+/*globals isLocalId: false, isDeleted: false, Changes: false, filterChange: false */
 
 'use strict';
 
@@ -4216,15 +4222,7 @@ var IdbPouch = function(opts, callback) {
     }
 
     function onTxnComplete() {
-      dedupResults.map(function(c) {
-        if (opts.filter && !opts.filter.apply(this, [c.doc])) {
-          return;
-        }
-        if (!opts.include_docs) {
-          delete c.doc;
-        }
-        call(opts.onChange, c);
-      });
+      dedupResults.map(filterChange(opts));
       call(opts.complete, null, {results: dedupResults});
     }
 
@@ -4304,7 +4302,7 @@ IdbPouch.Changes = new Changes();
 Pouch.adapter('idb', IdbPouch);
 
 /*globals call: false, extend: false, parseDoc: false, Crypto: false */
-/*globals isLocalId: false, isDeleted: false, Changes: false */
+/*globals isLocalId: false, isDeleted: false, Changes: false, filterChange: false */
 
 'use strict';
 
@@ -4908,15 +4906,7 @@ var webSqlPouch = function(opts, callback) {
               dedupResults.push(result);
             }
           }
-          dedupResults.map(function(c) {
-            if (opts.filter && !opts.filter.apply(this, [c.doc])) {
-              return;
-            }
-            if (!opts.include_docs) {
-              delete c.doc;
-            }
-            call(opts.onChange, c);
-          });
+          dedupResults.map(filterChange(opts));
 
           call(opts.complete, null, {results: dedupResults});
         });

@@ -130,23 +130,6 @@
                 }
             }
         }
-        .puton-json-view {
-            background-color: #fdf6e3;
-            color: #b58900;
-            outline: 1px solid #ccc;
-            padding: 5px;
-            margin: 5px 0;
-            display: block;
-            .string {
-                color: #2aa198;
-            }
-            .number {
-                color: #d33682;
-            }
-            .boolean {
-                color: #cb4b16;
-            }
-        }
     }
     .code-edit {
         width: 100%;
@@ -154,6 +137,18 @@
         border: 1px solid #888;
     }
 
+    //
+    // JSON View
+    //
+    .puton-json-view {
+        code {
+            font: 15px 'Source Code Pro', sans-serif;    
+        }
+        outline: 1px solid #ccc;
+        padding: 5px;
+        margin: 5px 0;
+        display: block;
+    }
 
     #puton-main {
         

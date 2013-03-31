@@ -68,7 +68,7 @@ tmpl.doc_full = "\
 <a class='option editoption'>edit</a>&nbsp;\
 <a class='option deleteoption'>delete</a>\
 </div>\
-<pre class='puton-json-view'><%= value %></pre>";
+<pre class='puton-json-view'><code><%= value %></code></pre>";
 
 tmpl.doc_collapsed = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
@@ -104,8 +104,8 @@ tmpl.documents = "\
 tmpl.revisions = "<div class='revisions'></div>";
 
 tmpl.rev_full = "\
-<h3 class='key'><%- key %></h3>\
-<pre class='value'><%= value %></pre>";
+<h3 class='puton-doc-key'><%- key %></h3>\
+<pre class='puton-json-view'><code><%= value %></code></pre>";
 
 tmpl.tabbutton = "<a class='tabbutton><%- label %></a>";
 
