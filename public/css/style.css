@@ -129,8 +129,6 @@
 }
 #puton .puton-json-view {
   outline: 1px solid #ccc;
-  padding: 5px;
-  margin: 5px 0;
   display: block;
 }
 #puton .puton-json-view code {

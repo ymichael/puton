@@ -72,7 +72,7 @@ tmpl.doc_full = "\
 
 tmpl.doc_collapsed = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
-<span class='puton-json-view'><%- trunc %></span>";
+<pre class='puton-json-view'><code><%= trunc %><code></pre>";
 
 tmpl.doc_edit = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
@@ -647,7 +647,7 @@ window.Puton = (function() {
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
                     key: model.toJSON().key || this.model.id,
-                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
+                    trunc: Puton.utils.syntaxHighlight(JSON.stringify(model.toJSON()).substring(0, 50) + "...")
                 }));
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({

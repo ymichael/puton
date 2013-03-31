@@ -72,7 +72,7 @@ tmpl.doc_full = "\
 
 tmpl.doc_collapsed = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
-<span class='puton-json-view'><%- trunc %></span>";
+<pre class='puton-json-view'><code><%= trunc %><code></pre>";
 
 tmpl.doc_edit = "\
 <h3 class='puton-doc-key'><%- key %></h3>\

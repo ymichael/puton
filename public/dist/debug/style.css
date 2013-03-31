@@ -129,8 +129,6 @@
 }
 #puton .puton-json-view {
   outline: 1px solid #ccc;
-  padding: 5px;
-  margin: 5px 0;
   display: block;
 }
 #puton .puton-json-view code {
@@ -331,7 +329,6 @@ github.com style (c) Vasily Polovnyov <vast@whiteants.net>
 */
 pre code {
   display: block;
-  padding: 0.5em;
   color: #333;
   background: #f8f8ff;
 }
