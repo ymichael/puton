@@ -192,6 +192,24 @@ window.Puton = (function() {
         }
     });
 
+    v.AddDocForm = Backbone.View.extend({
+        id: "puton-add-doc",
+        render: function() {
+            this.$el.html(tmpl.addDocForm());
+            return this;
+        },
+        events: {
+            "click .puton-code-edit-cancel": "cancel",
+            "click .puton-code-edit-save": "save"
+        },
+        save: function(e) {
+            this.$el.trigger("addDocSave");
+        },
+        cancel: function(e) {
+            this.remove();
+        }
+    });
+
     v.DB = Backbone.View.extend({
         initialize: function() {
             this.listenTo(this.model, "all", this.render);
@@ -202,7 +220,8 @@ window.Puton = (function() {
             "deleteDocument": "deleteDocument",
             "changeTab": "changeTab",
             "closeTab": "closeTab",
-            "showRev": "showRev"
+            "showRev": "showRev",
+            "addDocSave": "addDocSave"
         },
         showRev: function(e, rev) {
             if (this.revisions) {
@@ -240,13 +259,15 @@ window.Puton = (function() {
                 });
             });
         },
-        addDoc: function(e) {
+        addDocSave: function(e) {
             var self = this;
-            var x = prompt("Document: ", '{}');
-
+            var x = this.cm.getValue();
             if (!x) {
                 return;
             }
+
+            // Close form
+            this.addDocForm.remove();
 
             try {
                 x = x.trim();
@@ -283,6 +304,22 @@ window.Puton = (function() {
             } catch(err) {
                 console.error(err);
             }
+        },
+        addDoc: function(e) {
+            if (this.addDocForm) {
+                this.addDocForm.remove();
+            }
+
+            this.addDocForm = new v.AddDocForm();
+            this.$("#puton-toolbar").append(this.addDocForm.render().el);
+            this.cm = CodeMirror.fromTextArea(this.addDocForm.$("textarea")[0], {
+                lineNumbers: true,
+                tabSize: 4,
+                indentUnit: 4,
+                autofocus: true,
+                indentWithTabs: true,
+                mode: "text/javascript"
+            });
         },
         query: function() {
             var query = new v.Query({

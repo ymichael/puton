@@ -35,6 +35,18 @@ tmpl.mainView = "\
     <% } %>\
 </div>";
 
+tmpl.addDocForm = "\
+<div class='puton-caret'>\
+    <div class='puton-innercaret'></div>\
+    <div class='puton-outercaret'></div>\
+</div>\
+<textarea class='puton-add-doc-form' name='addDocForm'>{\n\
+\n\
+\n\
+\n\}</textarea>\
+<button class='puton-code-edit-cancel'>Cancel</button>\
+<button class='puton-code-edit-save'>Save</button>";
+
 tmpl.log = "\
 <p class='log log-<%- type %>'>\
     <b>\
