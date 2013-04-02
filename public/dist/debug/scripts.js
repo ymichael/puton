@@ -35,6 +35,18 @@ tmpl.mainView = "\
     <% } %>\
 </div>";
 
+tmpl.addDocForm = "\
+<div class='puton-caret'>\
+    <div class='puton-innercaret'></div>\
+    <div class='puton-outercaret'></div>\
+</div>\
+<textarea class='puton-add-doc-form' name='addDocForm'>{\n\
+\n\
+\n\
+\n\}</textarea>\
+<button class='puton-code-edit-cancel'>Cancel</button>\
+<button class='puton-code-edit-save'>Save</button>";
+
 tmpl.log = "\
 <p class='log log-<%- type %>'>\
     <b>\
@@ -77,7 +89,8 @@ tmpl.doc_collapsed = "\
 tmpl.doc_edit = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
 <textarea class='puton-code-edit' name='code'><%= code %></textarea>\
-<button class='code-edit-save'>Save</button>";
+<button class='puton-code-edit-cancel'>Cancel</button>\
+<button class='puton-code-edit-save'>Save</button>";
 
 tmpl.tabs = "\
 <div class='docs'></div>";
@@ -116,6 +129,8 @@ tmpl.rev_full = "\
 <pre class='puton-json-view'><code><%= value %></code></pre>";
 
 tmpl.tabbutton = "<a class='tabbutton><%- label %></a>";
+tmpl.tab = "<span><%- name %></span>";
+tmpl.closeabletab = "<span><%- name %></span><div class='puton-close-tab'></div>";
 
 // ## Compile templates/partials
 var compiled = {};
@@ -162,9 +177,12 @@ window.Puton = (function() {
         },
         start: function() {
             this.render();
-            this.logview = new v.Log({
-                el: this.$("#puton-log")
-            });
+
+            // disable log view
+            // this.logview = new v.Log({
+            //     el: this.$("#puton-log")
+            // });
+
             this.mainPage();
         },
         render: function() {
@@ -325,6 +343,24 @@ window.Puton = (function() {
         }
     });
 
+    v.AddDocForm = Backbone.View.extend({
+        id: "puton-add-doc",
+        render: function() {
+            this.$el.html(tmpl.addDocForm());
+            return this;
+        },
+        events: {
+            "click .puton-code-edit-cancel": "cancel",
+            "click .puton-code-edit-save": "save"
+        },
+        save: function(e) {
+            this.$el.trigger("addDocSave");
+        },
+        cancel: function(e) {
+            this.remove();
+        }
+    });
+
     v.DB = Backbone.View.extend({
         initialize: function() {
             this.listenTo(this.model, "all", this.render);
@@ -333,11 +369,33 @@ window.Puton = (function() {
             "click #adddoc": "addDoc",
             "click #query": "query",
             "deleteDocument": "deleteDocument",
-            "changeTab": "changeTab"
+            "changeTab": "changeTab",
+            "closeTab": "closeTab",
+            "showRev": "showRev",
+            "addDocSave": "addDocSave"
+        },
+        showRev: function(e, rev) {
+            if (this.revisions) {
+                this.revisions.remove();
+            }
+
+            this.revisions = rev;
+            this.$(".puton-revs-container").html(rev.render().el);
+        },
+        closeTab: function(e, tab) {
+            this.toolbar.removeTab(tab);
+
+            if (tab.isActive()) {
+                var changeTo = this.toolbar.tabs[0];
+                changeTo.view.render();
+                this.toolbar.switchTo(changeTo);
+            }
+
+            this.toolbar.render();
         },
         changeTab: function(e, tab) {
-            tab.render();
-            this.toolbar.active(tab);
+            tab.view.render();
+            this.toolbar.switchTo(tab);
         },
         deleteDocument: function(e, doc_id) {
             var that = this;
@@ -352,10 +410,18 @@ window.Puton = (function() {
                 });
             });
         },
-        addDoc: function(e) {
+        addDocSave: function(e) {
             var self = this;
-            var x = prompt("Document: ", '{}').trim();
+            var x = this.cm.getValue();
+            if (!x) {
+                return;
+            }
+
+            // Close form
+            this.addDocForm.remove();
+
             try {
+                x = x.trim();
                 if (x.length === 0 || x[0] !== '{' || x[x.length-1] !== '}') {
                     throw("Not a valid object");
                 }
@@ -390,16 +456,35 @@ window.Puton = (function() {
                 console.error(err);
             }
         },
+        addDoc: function(e) {
+            if (this.addDocForm) {
+                this.addDocForm.remove();
+            }
+
+            this.addDocForm = new v.AddDocForm();
+            this.$("#puton-toolbar").append(this.addDocForm.render().el);
+            this.cm = CodeMirror.fromTextArea(this.addDocForm.$("textarea")[0], {
+                lineNumbers: true,
+                tabSize: 4,
+                indentUnit: 4,
+                autofocus: true,
+                indentWithTabs: true,
+                mode: "text/javascript"
+            });
+        },
         query: function() {
             var query = new v.Query({
                 el: this.$(".puton-docs"),
                 db: this.model.db
             });
-            this.toolbar.addtab(query);
+
             query.render();
+            this.toolbar.addTabFor(query);
         },
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
+
+            // Toolbar
             this.toolbar = new v.Toolbar({
                 el: this.$("#puton-toolbar")
             });
@@ -413,26 +498,44 @@ window.Puton = (function() {
 
             // add tab
             all.tabname = "Main";
-            this.toolbar.addtab(all);
+            this.toolbar.addTabFor(all);
         }
     });
 
     v.Toolbar = Backbone.View.extend({
         initialize: function() {
+            this._index = 0;
             this.tabs = [];
-            this.tabviews = [];
         },
-        addtab: function(tab) {
-            this.tabs.push(tab);
+        addTabFor: function(view) {
+            this.tabs.forEach(function(tab) {
+                tab.active = false;
+            });
+
+            this._index = this._index + 1;
+            this.tabs.push({
+                count: this._index,
+                active: true,
+                view: view
+            });
+
             this.render();
-            this.active(tab);
         },
-        active: function(tab) {
-            _.each(this.tabviews, function(tabview) {
-                if (tabview.view === tab) {
-                    tabview.$el.addClass("active");
+        switchTo: function(tabView) {
+            this._active(tabView);
+            this.render();
+        },
+        removeTab: function(tab) {
+            this.tabs = _.filter(this.tabs, function(t) {
+                return tab.view !== t.view;
+            });
+        },
+        _active: function(tabView) {
+            this.tabs.forEach(function(tab) {
+                if (tabView.view === tab.view) {
+                    tab.active = true;
                 } else {
-                    tabview.$el.removeClass("active");
+                    tab.active = false;
                 }
             });
         },
@@ -440,16 +543,12 @@ window.Puton = (function() {
             this.$el.html(tmpl.toolbar());
             var that = this;
             if (this.tabs.length > 1) {
-                _.each(this.tabs, function(tab, index) {
-                    var x = new v.Tab({
-                        count: index,
-                        view: tab
-                    });
-                    that.tabviews.push(x);
-                    that.$("#puton-tab-buttons").append(x.render().el);
+                _.each(this.tabs, function(tab) {
+                    var tabView = new v.Tab(tab);
+                    that.$("#puton-tab-buttons")
+                        .append(tabView.render().el);
                 });
             }
-
             return this;
         }
     });
@@ -457,17 +556,43 @@ window.Puton = (function() {
     v.Tab = Backbone.View.extend({
         className: "puton-tab-button",
         initialize: function(options) {
+            this._isActive = options.active;
             this.count = options.count;
             this.view = options.view;
         },
         events: {
+            "click .puton-close-tab": "closeTab",
             "click": "changeTab"
         },
-        changeTab: function() {
-            this.$el.trigger("changeTab", this.view);
+        closeTab: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.$el.trigger("closeTab", this);
+        },
+        changeTab: function(e) {
+            this.$el.trigger("changeTab", this);
+        },
+        isActive: function(tab) {
+            return this._isActive;
         },
         render: function() {
-            this.$el.html(this.view.tabname || "Query " + this.count);
+            if (this.view.tabname) {
+                this.$el.html(tmpl.tab({
+                    name: this.view.tabname
+                }));
+            } else {
+                this.$el.html(tmpl.closeabletab({
+                    name: "Query " + this.count
+                }));
+                this.$el.addClass("closeable");
+            }
+
+            if (this.isActive()) {
+                this.$el.addClass("active");
+            } else {
+                this.$el.removeClass("active");
+            }
+
             return this;
         }
     });
@@ -575,6 +700,7 @@ window.Puton = (function() {
             } else if (this.type === 'tree') {
                 this.renderTree.apply(this, arguments);
             }
+            return this;
         },
         renderTree: function() {
             var $el = this.$el;
@@ -661,11 +787,18 @@ window.Puton = (function() {
         render: function() {
             var model = this.model;
             var key = this.model.key();
+
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
                     key: key,
                     trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
                 }));
+
+                // close rev tree
+                if (this.revisions) {
+                    this.revisions.remove();
+                }
+
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
                     key: key,
@@ -718,15 +851,15 @@ window.Puton = (function() {
                     throw("Not a valid object");
                 }
 
-                json._id = (this.model.toJSON())._id;
-                json._rev = (this.model.toJSON())._rev;
+                json._id = (self.model.toJSON())._id;
+                json._rev = (self.model.toJSON())._rev;
 
-                this.db.put(json, function(err, res) {
+                self.db.put(json, function(err, res) {
                     if (err) {
                         return console.error(err);
                     }
 
-                    this.db.get(json._id, function(err, res) {
+                    self.db.get(json._id, function(err, res) {
                         if (err) {
                             return console.error(err);
                         }
@@ -742,13 +875,21 @@ window.Puton = (function() {
                 this.render();
             }
         },
+        cancelEdit: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            this.show = "full";
+            this.render();
+        },
         events: {
             "click .revoption": "revOption",
             "click .revtreeoption": "revTreeOption",
             "click .editoption": "editOption",
             "click .deleteoption": "deleteOption",
             "click": "toggleView",
-            "click .code-edit-save": "saveEdit"
+            "click .puton-code-edit-save": "saveEdit",
+            "click .puton-code-edit-cancel": "cancelEdit"
         },
         editOption: function(e) {
             e.preventDefault();
@@ -769,30 +910,27 @@ window.Puton = (function() {
         revOption: function(e) {
             e.preventDefault();
             e.stopPropagation();
-            var revisions = new v.Revisions({
-                el: $(".puton-revs-container"),
-                db: this.db,
-                doc_id: (this.model.toJSON())._id,
-                type: 'list'
-            });
-            revisions.render();
+            this.showRev("list");
         },
         revTreeOption: function(e) {
             e.preventDefault();
             e.stopPropagation();
-            var revisions = new v.Revisions({
-                el: $(".puton-revs-container"),
+            this.showRev("tree");
+        },
+        showRev: function(type) {
+            this.revisions = new v.Revisions({
                 db: this.db,
                 doc_id: (this.model.toJSON())._id,
-                type: 'tree'
+                type: type
             });
-            revisions.render();
+
+            this.$el.trigger("showRev", this.revisions);
         },
         toggleView: function(e) {
             e.preventDefault();
             e.stopPropagation();
 
-            if (this.show ===  'edit') {
+            if (this.show === 'edit') {
                 return;
             }
 

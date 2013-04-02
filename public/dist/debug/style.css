@@ -135,10 +135,6 @@
 #puton .puton-revision .puton-doc-optionsbar .option:hover {
   color: #839496;
 }
-#puton .puton-code-edit {
-  width: 100%;
-  min-height: 80px;
-}
 #puton .puton-json-view {
   outline: 1px solid #ccc;
   display: block;
@@ -160,6 +156,7 @@
   float: right;
 }
 #puton #puton-toolbar {
+  position: relative;
   text-align: right;
   margin: 10px 0;
   margin-top: -23px;
@@ -175,19 +172,96 @@
 #puton .button:hover {
   text-decoration: underline;
 }
+#puton #puton-add-doc {
+  position: absolute;
+  right: 0;
+  top: 35px;
+  background-color: white;
+  border: solid 1px;
+  width: 380px;
+  text-align: left;
+  padding: 10px;
+  border: solid 1px #ddd;
+}
+#puton #puton-add-doc .puton-caret {
+  position: absolute;
+  top: -15px;
+  right: 40px;
+  width: 20px;
+  height: 15px;
+}
+#puton #puton-add-doc .puton-caret .puton-outercaret {
+  position: absolute;
+  top: 1.5px;
+  left: 1px;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-bottom: 14px solid #fff;
+}
+#puton #puton-add-doc .puton-caret .puton-innercaret {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 15px solid #ddd;
+}
+#puton #puton-add-doc .puton-code-edit {
+  text-align: left;
+}
 #puton #puton-tab-buttons {
   text-align: left;
-  border-top: solid 1px #eee;
+  border-bottom: solid 1px;
   padding-top: 10px;
   margin-top: 10px;
 }
 #puton #puton-tab-buttons .puton-tab-button {
-  margin-right: 10px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  padding: 5px 15px;
   font-size: 17px;
+  position: relative;
   display: inline-block;
+  border-top: solid 1px #ccc;
+  border-left: solid 1px #ccc;
+  border-right: solid 1px #ccc;
+  opacity: 0.5;
+  text-align: center;
+}
+#puton #puton-tab-buttons .puton-tab-button.closeable {
+  padding: 5px 40px 5px 15px;
+}
+#puton #puton-tab-buttons .puton-tab-button:hover {
+  opacity: 0.8;
 }
 #puton #puton-tab-buttons .puton-tab-button.active {
-  border-bottom: solid 4px #a51805;
+  opacity: 1;
+  cursor: auto;
+  border-bottom: solid 1px white;
+  border-top: solid 1px #555;
+  border-right: solid 1px #555;
+  border-left: solid 1px #555;
+}
+#puton #puton-tab-buttons .puton-tab-button .puton-close-tab {
+  padding: 3px;
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  vertical-align: bottom;
+  display: inline-block;
+  border-radius: 20px;
+  background-image: url(/img/close.png);
+  background-repeat: no-repeat;
+  background-size: 100%;
+  background-origin: content-box;
+  border: solid 1px white;
+  cursor: pointer;
+}
+#puton #puton-tab-buttons .puton-tab-button .puton-close-tab:hover {
+  border: solid 1px;
+  background-color: #ccc;
 }
 #puton #puton-log {
   z-index: -100;
