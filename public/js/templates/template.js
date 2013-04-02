@@ -4,11 +4,12 @@
 var tmpl = {};
 
 tmpl.app = "\
-<h1 id='puton-heading'>Puton</h1>\
-<div id='puton-main'>\
-</div>\
-<a id='puton-hide-button'>Close</a>\
-<div id='puton-log'></div>";
+<div id='puton-container'>\
+    <h1 id='puton-heading'>Puton</h1>\
+    <div id='puton-main'></div>\
+    <a id='puton-hide-button'></a>\
+    <div id='puton-log'></div>\
+</div>";
 
 tmpl.mainView = "\
 \
@@ -54,10 +55,9 @@ tmpl.db = "\
     <b>update_seq: </b>\
     <%- update_seq %>\
 </p>\
-<div id='puton-toolbar'>\
-</div>\
-<div id='tabs'>\
-    <div class='docs'></div>\
+<div id='puton-toolbar'></div>\
+<div id='puton-tabs'>\
+    <div class='puton-docs'></div>\
 </div>";
 
 tmpl.doc_full = "\
@@ -84,22 +84,30 @@ tmpl.tabs = "\
 
 tmpl.queryInput = "\
     Map: \
-    <textarea class='code-edit code-map' name='map'>function(doc) {\n\
+    <textarea class='puton-code-edit puton-code-map' name='map'>function(doc) {\n\
+\n\
+\n\
 \n\
 \n\}</textarea>\
     Reduce: \
-    <textarea class='code-edit code-reduce' name='reduce'></textarea>\
-    <button class='run'>Run Query</button>\
-    <div class='docs'></div>";
+    <textarea class='puton-code-edit puton-code-reduce' name='reduce'>\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\</textarea>\
+<button class='puton-run-query'>Run Query</button>\
+<div class='docs'></div>";
 
 tmpl.toolbar = "\
 <a class='button' id='query'>Run Query</a>\
 <a class='button' id='adddoc'>Add document</a>\
-<div id='puton-tabbuttons'></div>";
+<div id='puton-tab-buttons'></div>";
 
 tmpl.documents = "\
-<div class='docs-container'></div>\
-<div id='puton-revs-container'></div>";
+<div class='puton-docs-container'></div>\
+<div class='puton-revs-container'></div>";
 
 tmpl.revisions = "<div class='revisions'></div>";
 

@@ -1,6 +1,5 @@
 @import url(http://fonts.googleapis.com/css?family=Source+Code+Pro);
 #puton {
-  padding: 20px;
   color: #555555;
   overflow: auto;
   background-color: white;
@@ -10,8 +9,12 @@
   right: 0px;
   bottom: 0px;
   border: 1px solid #eee;
-  padding: 50px;
+  padding: 50px 0;
   font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+#puton #puton-container {
+  margin: auto;
+  width: 960px;
 }
 #puton #puton-heading {
   cursor: pointer;
@@ -21,12 +24,14 @@
 }
 #puton #puton-hide-button {
   position: absolute;
-  top: 30px;
-  right: 30px;
-  width: 100px;
-  text-align: right;
-  display: block;
+  top: 0px;
+  right: 0px;
   cursor: pointer;
+  border-top: solid 40px #ccc;
+  border-left: solid 40px transparent;
+}
+#puton #puton-hide-button:hover {
+  border-top: solid 40px #a51805;
 }
 #puton h1,
 #puton h2,
@@ -94,32 +99,40 @@
   margin: 0 10px;
   display: inline-block;
 }
-#puton .puton-doc {
-  width: 500px;
+#puton .puton-doc,
+#puton .puton-revision {
+  width: 470px;
   padding: 10px 0;
   margin: 10px 0;
 }
 #puton .puton-doc .puton-doc-key,
+#puton .puton-revision .puton-doc-key,
 #puton .puton-doc .puton-json-view,
-#puton .puton-doc .puton-doc-optionsbar {
+#puton .puton-revision .puton-json-view,
+#puton .puton-doc .puton-doc-optionsbar,
+#puton .puton-revision .puton-doc-optionsbar {
   font: 15px 'Source Code Pro', sans-serif;
 }
-#puton .puton-doc .puton-doc-key {
+#puton .puton-doc .puton-doc-key,
+#puton .puton-revision .puton-doc-key {
   display: inline-block;
   margin-right: 10px;
 }
-#puton .puton-doc .puton-doc-optionsbar {
+#puton .puton-doc .puton-doc-optionsbar,
+#puton .puton-revision .puton-doc-optionsbar {
   display: block;
   margin: 5px 0 10px;
 }
-#puton .puton-doc .puton-doc-optionsbar .option {
+#puton .puton-doc .puton-doc-optionsbar .option,
+#puton .puton-revision .puton-doc-optionsbar .option {
   border: solid 1px;
   border-radius: 5px;
   padding: 2px 5px;
   cursor: pointer;
   color: #555555;
 }
-#puton .puton-doc .puton-doc-optionsbar .option:hover {
+#puton .puton-doc .puton-doc-optionsbar .option:hover,
+#puton .puton-revision .puton-doc-optionsbar .option:hover {
   color: #839496;
 }
 #puton .puton-code-edit {
@@ -133,21 +146,28 @@
 #puton .puton-json-view code {
   font: 15px 'Source Code Pro', sans-serif;
 }
-#puton .docs {
-  position: relative;
+#puton .puton-revs-container,
+#puton .puton-docs-container {
+  width: 480px;
 }
-#puton .docs #puton-revs-container {
-  position: absolute;
-  left: 530px;
-  top: 0px;
+#puton .puton-docs-container {
+  float: left;
+}
+#puton .puton-revs-container {
+  float: right;
+}
+#puton .revisions {
+  float: right;
 }
 #puton #puton-toolbar {
   text-align: right;
-  margin-bottom: 20px;
-  width: 500px;
+  margin: 10px 0;
+  margin-top: -23px;
 }
 #puton #puton-toolbar a {
   margin-left: 12px;
+  font-weight: bold;
+  color: #555555;
 }
 #puton .button {
   cursor: pointer;
@@ -155,19 +175,23 @@
 #puton .button:hover {
   text-decoration: underline;
 }
-#puton #puton-tabbuttons {
+#puton #puton-tab-buttons {
   text-align: left;
+  border-top: solid 1px #eee;
+  padding-top: 10px;
+  margin-top: 10px;
 }
-#puton .tabbutton {
+#puton #puton-tab-buttons .puton-tab-button {
+  margin-right: 10px;
+  font-size: 17px;
   display: inline-block;
-  margin: 10px;
-  padding: 5px 0;
 }
-#puton .tabbutton.active {
-  border-bottom: solid 2px #555;
+#puton #puton-tab-buttons .puton-tab-button.active {
+  border-bottom: solid 4px #a51805;
 }
 #puton #puton-log {
   z-index: -100;
+  display: none;
   font-size: 13px;
   color: #555;
   text-align: right;
@@ -177,13 +201,13 @@
   width: 500px;
   overflow: auto;
 }
-#puton .log-info {
+#puton #puton-log .log-info {
   color: #444;
 }
-#puton .log-log {
+#puton #puton-log .log-log {
   color: #888;
 }
-#puton .log-error {
+#puton #puton-log .log-error {
   color: #933;
   font-size: 1.2em;
 }

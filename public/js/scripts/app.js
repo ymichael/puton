@@ -44,7 +44,8 @@ window.Puton = (function() {
         mainPage: function(e) {
             this.currentView = new v.Main({
                 el: this.$("#puton-main")
-            }).render();
+            });
+            this.currentView.render();
         },
         show: function(e) {
             this.$el.show();
@@ -255,7 +256,7 @@ window.Puton = (function() {
         },
         query: function() {
             var query = new v.Query({
-                el: this.$(".docs"),
+                el: this.$(".puton-docs"),
                 db: this.model.db
             });
             this.toolbar.addtab(query);
@@ -268,7 +269,7 @@ window.Puton = (function() {
             });
 
             var all =  new v.Documents({
-                el: this.$(".docs"),
+                el: this.$(".puton-docs"),
                 collection: this.model.docs,
                 db: this.model.db
             });
@@ -309,7 +310,7 @@ window.Puton = (function() {
                         view: tab
                     });
                     that.tabviews.push(x);
-                    that.$("#puton-tabbuttons").append(x.render().el);
+                    that.$("#puton-tab-buttons").append(x.render().el);
                 });
             }
 
@@ -318,7 +319,7 @@ window.Puton = (function() {
     });
 
     v.Tab = Backbone.View.extend({
-        className: "tabbutton",
+        className: "puton-tab-button",
         initialize: function(options) {
             this.count = options.count;
             this.view = options.view;
@@ -330,7 +331,7 @@ window.Puton = (function() {
             this.$el.trigger("changeTab", this.view);
         },
         render: function() {
-            this.$el.html(this.view.tabname || "Query "+this.count);
+            this.$el.html(this.view.tabname || "Query " + this.count);
             return this;
         }
     });
@@ -342,7 +343,7 @@ window.Puton = (function() {
             this.docs = new m.Documents(null, {db: this.db});
         },
         events: {
-            'click .run': 'runQuery'
+            'click .puton-run-query': 'runQuery'
         },
         render: function() {
             var self = this;
@@ -353,7 +354,7 @@ window.Puton = (function() {
             var map = false;
             self.cm = {};
             ['map','reduce'].forEach(function(el) {
-                self.cm[el]  = CodeMirror.fromTextArea(self.$el.find('.code-'+el).get(0),{
+                self.cm[el]  = CodeMirror.fromTextArea(self.$el.find('.puton-code-' + el).get(0),{
                     lineNumbers: true,
                     tabSize: 4,
                     indentUnit: 4,
@@ -422,12 +423,11 @@ window.Puton = (function() {
                 fragment.appendChild(docview.render().el);
             });
             this.$el.html(tmpl.documents);
-            this.$el.find('.docs-container').html(fragment);
+            this.$el.find('.puton-docs-container').html(fragment);
         }
     });
 
     v.Revisions = Backbone.View.extend({
-        className: 'revs',
         initialize: function(opts) {
             this.db = opts.db;
             this.doc_id = opts.doc_id;
@@ -496,7 +496,7 @@ window.Puton = (function() {
     });
 
     v.Revision = Backbone.View.extend({
-        className: 'rev',
+        className: 'puton-revision',
         render: function(doc, doc_id) {
             var model = doc;
 
@@ -634,7 +634,7 @@ window.Puton = (function() {
             e.preventDefault();
             e.stopPropagation();
             var revisions = new v.Revisions({
-                el: $("#puton-revs-container"),
+                el: $(".puton-revs-container"),
                 db: this.db,
                 doc_id: (this.model.toJSON())._id,
                 type: 'list'
@@ -645,7 +645,7 @@ window.Puton = (function() {
             e.preventDefault();
             e.stopPropagation();
             var revisions = new v.Revisions({
-                el: $("#puton-revs-container"),
+                el: $(".puton-revs-container"),
                 db: this.db,
                 doc_id: (this.model.toJSON())._id,
                 type: 'tree'

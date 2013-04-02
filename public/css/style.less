@@ -2,7 +2,6 @@
 @fontcolor: #555;
 @selected: #a51805;
 #puton {
-    padding: 20px;
     color: @fontcolor;
     overflow: auto;
     background-color: white;
@@ -12,8 +11,13 @@
     right: 0px;
     bottom: 0px;
     border: 1px solid #eee;
-    padding: 50px;
+    padding: 50px 0;
     font: 14px "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+    #puton-container {
+        margin: auto;
+        width: 960px;
+    }
 
     #puton-heading {
         cursor: pointer;
@@ -24,12 +28,14 @@
 
     #puton-hide-button {
         position: absolute;
-        top: 30px;
-        right: 30px;
-        width: 100px;
-        text-align: right;
-        display: block;
+        top: 0px;
+        right: 0px;
         cursor: pointer;
+        border-top: solid 40px #ccc;
+        border-left: solid 40px transparent;
+        &:hover {
+            border-top: solid 40px @selected;
+        }
     }
 
     h1, h2, h3, h4, h5 {
@@ -102,8 +108,8 @@
         display: inline-block;
     }
 
-    .puton-doc {
-        width: 500px;
+    .puton-doc, .puton-revision {
+        width: 470px;
         padding: 10px 0;
         margin: 10px 0;
         //
@@ -151,23 +157,28 @@
         
     }
 
-    .docs {
-        position: relative;
-        #puton-revs-container {
-            position: absolute;
-            left: 530px;
-            top: 0px;
-        }
+    .puton-revs-container,
+    .puton-docs-container {
+        width: 480px;
     }
+
+    .puton-docs-container { float: left }
+    .puton-revs-container { float: right }
+    .revisions { float: right }
 
     #puton-toolbar {
         text-align: right;
-        margin-bottom: 20px;
-        width: 500px;
+        margin: 10px 0;
+        margin-top: -23px;
+        a {
+            margin-left: 12px;
+            font-weight: bold;
+            color: @fontcolor;
+        }
     }
-    #puton-toolbar a {
-        margin-left: 12px;
-    }
+
+
+
     .button {
         cursor: pointer;
     }
@@ -175,19 +186,24 @@
         text-decoration: underline;
     }
 
-    #puton-tabbuttons {
+    #puton-tab-buttons {
         text-align: left;
+        border-top: solid 1px #eee;
+        padding-top: 10px;
+        margin-top: 10px;
+        .puton-tab-button {
+            margin-right: 10px;
+            font-size: 17px;
+            display: inline-block;
+            &.active {
+                border-bottom: solid 4px @selected;
+            }
+        }
     }
-    .tabbutton {
-        display: inline-block;
-        margin: 10px;
-        padding: 5px 0;
-    }
-    .tabbutton.active {
-        border-bottom: solid 2px #555;
-    }
+
     #puton-log {
         z-index: -100;
+        display: none;
         font-size: 13px;
         color: #555;
         text-align: right;
@@ -196,16 +212,16 @@
         top: 50px;
         width: 500px;
         overflow: auto;
-    }
-    .log-info {
-        color: #444;
-    }
-    .log-log {
-        color: #888;
-    }
-    .log-error {
-        color: #933;
-        font-size: 1.2em;
+        .log-info {
+            color: #444;
+        }
+        .log-log {
+            color: #888;
+        }
+        .log-error {
+            color: #933;
+            font-size: 1.2em;
+        }
     }
 
     //
