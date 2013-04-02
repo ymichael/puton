@@ -4,11 +4,12 @@
 var tmpl = {};
 
 tmpl.app = "\
-<h1 id='puton-heading'>Puton</h1>\
-<div id='puton-main'>\
-</div>\
-<a id='puton-hide-button'>Close</a>\
-<div id='puton-log'></div>";
+<div id='puton-container'>\
+    <h1 id='puton-heading'>Puton</h1>\
+    <div id='puton-main'></div>\
+    <a id='puton-hide-button'></a>\
+    <div id='puton-log'></div>\
+</div>";
 
 tmpl.mainView = "\
 \
@@ -54,10 +55,9 @@ tmpl.db = "\
     <b>update_seq: </b>\
     <%- update_seq %>\
 </p>\
-<div id='puton-toolbar'>\
-</div>\
-<div id='tabs'>\
-    <div class='docs'></div>\
+<div id='puton-toolbar'></div>\
+<div id='puton-tabs'>\
+    <div class='puton-docs'></div>\
 </div>";
 
 tmpl.doc_full = "\
@@ -68,15 +68,15 @@ tmpl.doc_full = "\
 <a class='option editoption'>edit</a>&nbsp;\
 <a class='option deleteoption'>delete</a>\
 </div>\
-<pre class='puton-json-view'><code><%= value %></code></pre>";
+<pre class='puton-json-view'><code><%= Puton.utils.syntaxHighlight(value) %></code></pre>";
 
 tmpl.doc_collapsed = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
-<pre class='puton-json-view'><code><%= trunc %><code></pre>";
+<pre class='puton-json-view'><code><%= Puton.utils.syntaxHighlight(trunc) %><code></pre>";
 
 tmpl.doc_edit = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
-<textarea class='code-edit' name='code'><%= code %></textarea>\
+<textarea class='puton-code-edit' name='code'><%= code %></textarea>\
 <button class='code-edit-save'>Save</button>";
 
 tmpl.tabs = "\
@@ -84,22 +84,30 @@ tmpl.tabs = "\
 
 tmpl.queryInput = "\
     Map: \
-    <textarea class='code-edit code-map' name='map'>function(doc) {\n\
+    <textarea class='puton-code-edit puton-code-map' name='map'>function(doc) {\n\
+\n\
+\n\
 \n\
 \n\}</textarea>\
     Reduce: \
-    <textarea class='code-edit code-reduce' name='reduce'></textarea>\
-    <button class='run'>Run Query</button>\
-    <div class='docs'></div>";
+    <textarea class='puton-code-edit puton-code-reduce' name='reduce'>\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\</textarea>\
+<button class='puton-run-query'>Run Query</button>\
+<div class='docs'></div>";
 
 tmpl.toolbar = "\
 <a class='button' id='query'>Run Query</a>\
 <a class='button' id='adddoc'>Add document</a>\
-<div id='puton-tabbuttons'></div>";
+<div id='puton-tab-buttons'></div>";
 
 tmpl.documents = "\
-<div class='docs-container'></div>\
-<div id='puton-revs-container'></div>";
+<div class='puton-docs-container'></div>\
+<div class='puton-revs-container'></div>";
 
 tmpl.revisions = "<div class='revisions'></div>";
 
@@ -172,7 +180,8 @@ window.Puton = (function() {
         mainPage: function(e) {
             this.currentView = new v.Main({
                 el: this.$("#puton-main")
-            }).render();
+            });
+            this.currentView.render();
         },
         show: function(e) {
             this.$el.show();
@@ -189,6 +198,7 @@ window.Puton = (function() {
                 }
 
                 var database = new m.DB(null, {db: db});
+                database.fetch();
                 that.changeView(null, database);
             });
         },
@@ -382,7 +392,7 @@ window.Puton = (function() {
         },
         query: function() {
             var query = new v.Query({
-                el: this.$(".docs"),
+                el: this.$(".puton-docs"),
                 db: this.model.db
             });
             this.toolbar.addtab(query);
@@ -395,7 +405,7 @@ window.Puton = (function() {
             });
 
             var all =  new v.Documents({
-                el: this.$(".docs"),
+                el: this.$(".puton-docs"),
                 collection: this.model.docs,
                 db: this.model.db
             });
@@ -436,7 +446,7 @@ window.Puton = (function() {
                         view: tab
                     });
                     that.tabviews.push(x);
-                    that.$("#puton-tabbuttons").append(x.render().el);
+                    that.$("#puton-tab-buttons").append(x.render().el);
                 });
             }
 
@@ -445,7 +455,7 @@ window.Puton = (function() {
     });
 
     v.Tab = Backbone.View.extend({
-        className: "tabbutton",
+        className: "puton-tab-button",
         initialize: function(options) {
             this.count = options.count;
             this.view = options.view;
@@ -457,7 +467,7 @@ window.Puton = (function() {
             this.$el.trigger("changeTab", this.view);
         },
         render: function() {
-            this.$el.html(this.view.tabname || "Query "+this.count);
+            this.$el.html(this.view.tabname || "Query " + this.count);
             return this;
         }
     });
@@ -466,10 +476,10 @@ window.Puton = (function() {
         initialize: function(opts) {
             this.state = 0;
             this.db = opts.db;
-            this.docs = new m.Documents(null, {db: this.db, populate: false});
+            this.docs = new m.Documents(null, {db: this.db});
         },
         events: {
-            'click .run': 'runQuery'
+            'click .puton-run-query': 'runQuery'
         },
         render: function() {
             var self = this;
@@ -480,7 +490,7 @@ window.Puton = (function() {
             var map = false;
             self.cm = {};
             ['map','reduce'].forEach(function(el) {
-                self.cm[el]  = CodeMirror.fromTextArea(self.$el.find('.code-'+el).get(0),{
+                self.cm[el]  = CodeMirror.fromTextArea(self.$el.find('.puton-code-' + el).get(0),{
                     lineNumbers: true,
                     tabSize: 4,
                     indentUnit: 4,
@@ -490,13 +500,11 @@ window.Puton = (function() {
             });
             self.cm.map.focus();
 
-
             this.documentsView =  new v.Documents({
                 el: this.$el.find(".docs"),
                 collection: this.docs
             });
             this.documentsView.render();
-
         },
         runQuery: function() {
             var self = this;
@@ -551,12 +559,11 @@ window.Puton = (function() {
                 fragment.appendChild(docview.render().el);
             });
             this.$el.html(tmpl.documents);
-            this.$el.find('.docs-container').html(fragment);
+            this.$el.find('.puton-docs-container').html(fragment);
         }
     });
 
     v.Revisions = Backbone.View.extend({
-        className: 'revs',
         initialize: function(opts) {
             this.db = opts.db;
             this.doc_id = opts.doc_id;
@@ -625,7 +632,7 @@ window.Puton = (function() {
     });
 
     v.Revision = Backbone.View.extend({
-        className: 'rev',
+        className: 'puton-revision',
         render: function(doc, doc_id) {
             var model = doc;
 
@@ -653,18 +660,21 @@ window.Puton = (function() {
         },
         render: function() {
             var model = this.model;
+            var key = this.model.key();
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
-                    key: model.toJSON().key || this.model.id,
-                    trunc: Puton.utils.syntaxHighlight(JSON.stringify(model.toJSON()).substring(0, 50) + "...")
+                    key: key,
+                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
                 }));
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
-                    key: model.toJSON().key || this.model.id,
-                    value: Puton.utils.syntaxHighlight(model.toJSON())
+                    key: key,
+                    value: model.toJSON()
                 }));
+
                 if (!this.model.id) {
-                    // todo: more proper hiding of edit/delete
+                    // TODO
+                    // proper hiding of edit/delete
                     this.$el.find('.optionsbar').hide();
                 }
             } else if (this.show === 'edit') {
@@ -674,18 +684,24 @@ window.Puton = (function() {
                         delete modelJson[key];
                     }
                 });
+
                 this.$el.html(tmpl.doc_edit({
-                    key: model.toJSON().key || this.model.id,
-                    code: JSON.stringify(modelJson, undefined, 2)
+                    key: key,
+                    code: JSON.stringify(modelJson, undefined, 4)
                 }));
-                this.codeEdit = CodeMirror.fromTextArea(this.$el.find('.code-edit').get(0),{
-                    lineNumbers: false,
-                    tabSize: 4,
-                    indentUnit: 4,
-                    indentWithTabs: true,
-                    mode: "application/json",
-                    autofocus: true
-                });
+
+                this.codeEdit = CodeMirror.fromTextArea(
+                    this.$el.find('.puton-code-edit').get(0),
+                    {
+                        lineNumbers: false,
+                        tabSize: 4,
+                        indentUnit: 4,
+                        indentWithTabs: true,
+                        mode: "application/json",
+                        autofocus: true
+                    }
+                );
+
             }
             return this;
         },
@@ -754,7 +770,7 @@ window.Puton = (function() {
             e.preventDefault();
             e.stopPropagation();
             var revisions = new v.Revisions({
-                el: $("#puton-revs-container"),
+                el: $(".puton-revs-container"),
                 db: this.db,
                 doc_id: (this.model.toJSON())._id,
                 type: 'list'
@@ -765,7 +781,7 @@ window.Puton = (function() {
             e.preventDefault();
             e.stopPropagation();
             var revisions = new v.Revisions({
-                el: $("#puton-revs-container"),
+                el: $(".puton-revs-container"),
                 db: this.db,
                 doc_id: (this.model.toJSON())._id,
                 type: 'tree'
@@ -796,29 +812,36 @@ window.Puton = (function() {
 
     Backbone.Model.prototype.idAttribute = "_id";
 
-    m.Document = Backbone.Model.extend({});
+    m.Document = Backbone.Model.extend({
+        key: function() {
+            return this.get('key') || this.id;
+        }
+    });
 
     m.Documents = Backbone.Collection.extend({
+        model: m.Document,
         initialize: function(models, options) {
             var that = this;
             this.db = options.db;
-            if ('populate' in options && options.populate === false) {
-            } else {
-                this.db.allDocs({include_docs: true}, function(err, res) {
-                    that.add(_.pluck(res.rows, "doc"));
-                });
-            }
         },
-        model: m.Document
+        fetch: function() {
+            var that = this;
+            this.db.allDocs({
+                include_docs: true
+            }, function(err, res) {
+                that.add(_.pluck(res.rows, "doc"));
+            });
+        }
     });
 
     m.DB = Backbone.Model.extend({
         initialize: function(attr, options) {
-            var that = this;
             this.db = options.db;
             this.docs = new m.Documents(null, {db: this.db});
-
-            // bootstrap database
+            this.docs.fetch();
+        },
+        fetch: function() {
+            var that = this;
             this.db.info(function(err, info) {
                 that.set(info);
             });

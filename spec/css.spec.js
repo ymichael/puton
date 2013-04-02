@@ -31,11 +31,4 @@ describe("CSS/DOM Elements to have particular classes", function() {
 			expect(main.$('input#puton-db-input').length).toBe(1);
 		});
 	});
-
-	// TODO.
-	// describe("DB View", function() {
-	// 	expect(db.$('#puton-toolbar').length).toBe(1);
-	// 	expect(db.$('#puton-tabs').length).toBe(1);
-	// 	expect(db.$('.puton-docs').length).toBe(1);
-	// });
 });
