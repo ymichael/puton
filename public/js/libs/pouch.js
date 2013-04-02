@@ -1792,7 +1792,7 @@ var parseDoc = function(doc, newEdits) {
       newRevId = revInfo[2];
       doc._rev_tree = [{
         pos: parseInt(revInfo[1], 10),
-        ids: [revInfo[2], {}, []]
+        ids: [revInfo[2], opts, []]
       }];
     }
   }
@@ -2463,6 +2463,9 @@ var PouchAdapter = function(opts, callback) {
       return;
     }
     opts = extend(true, {}, opts);
+
+    // 0 and 1 should return 1 document
+    opts.limit = opts.limit === 0 ? 1 : opts.limit;
     return customApi._changes(opts);
   };
 
@@ -3231,6 +3234,10 @@ var HttpPouch = function(opts, callback) {
     // http://wiki.apache.org/couchdb/HTTP_database_API#Changes
     if (opts.conflicts) {
       params.push('conflicts=true');
+    }
+
+    if (opts.limit || opts.limit === 0) {
+      params.push('limit=' + opts.limit);
     }
 
     // If opts.descending exists, add the descending value to the query string.
@@ -4129,11 +4136,23 @@ var IdbPouch = function(opts, callback) {
     function fetchChanges() {
       txn = idb.transaction([DOC_STORE, BY_SEQ_STORE]);
       txn.oncomplete = onTxnComplete;
-      var req = descending ?
-        txn.objectStore(BY_SEQ_STORE)
-          .openCursor(IDBKeyRange.lowerBound(opts.since, true), descending) :
-        txn.objectStore(BY_SEQ_STORE)
-          .openCursor(IDBKeyRange.lowerBound(opts.since, true));
+
+      var req;
+
+      if (opts.limit && descending) {
+        req = txn.objectStore(BY_SEQ_STORE)
+            .openCursor(IDBKeyRange.bound(opts.since, opts.since + opts.limit, true), descending);
+      } else if (opts.limit && !descending) {
+        req = txn.objectStore(BY_SEQ_STORE)
+            .openCursor(IDBKeyRange.bound(opts.since, opts.since + opts.limit, true));
+      } else if (descending) {
+        req = txn.objectStore(BY_SEQ_STORE)
+            .openCursor(IDBKeyRange.lowerBound(opts.since, true), descending);
+      } else {
+        req = txn.objectStore(BY_SEQ_STORE)
+            .openCursor(IDBKeyRange.lowerBound(opts.since, true));
+      }
+
       req.onsuccess = onsuccess;
       req.onerror = onerror;
     }
@@ -4878,6 +4897,10 @@ var webSqlPouch = function(opts, callback) {
         DOC_STORE + '.winningseq WHERE ' + DOC_STORE + '.seq > ' + opts.since +
         ' ORDER BY ' + DOC_STORE + '.seq ' + (descending ? 'DESC' : 'ASC');
 
+      if (opts.limit) {
+        sql += ' LIMIT ' + opts.limit;
+      }
+
       db.transaction(function(tx) {
         tx.executeSql(sql, [], function(tx, result) {
           for (var i = 0, l = result.rows.length; i < l; i++ ) {
@@ -5040,9 +5063,6 @@ var MapReduce = function(db) {
       options.reduce = false;
     }
 
-    // Including conflicts
-    options.conflicts = true;
-
     function sum(values) {
       return values.reduce(function(a, b) { return a + b; }, 0);
     }
@@ -5090,10 +5110,6 @@ var MapReduce = function(db) {
       eval('fun.reduce = ' + fun.reduce.toString() + ';');
     }
 
-    // exclude  _conflicts key by default
-    // or to use options.conflicts if it's set when called by db.query
-    var conflicts = ('conflicts' in options ? options.conflicts : false);
-
     //only proceed once all documents are mapped and joined
     var checkComplete= function(){
       if (completed && results.length == num_started){
@@ -5104,7 +5120,10 @@ var MapReduce = function(db) {
           results.reverse();
         }
         if (options.reduce === false) {
-          return options.complete(null, {rows: results});
+          return options.complete(null, {
+            rows: results,
+            total_rows: results.length
+          });
         }
 
         var groups = [];
@@ -5121,12 +5140,12 @@ var MapReduce = function(db) {
           e.value = fun.reduce(e.key, e.value) || null;
           e.key = e.key[0][0];
         });
-        options.complete(null, {rows: groups});
+        options.complete(null, {rows: groups, total_rows: groups.length});
       }
     }
 
     db.changes({
-      conflicts: conflicts,
+      conflicts: true,
       include_docs: true,
       onChange: function(doc) {
         if (!('deleted' in doc)) {
