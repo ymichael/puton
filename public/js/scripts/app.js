@@ -269,7 +269,8 @@ window.Puton = (function() {
 
             var all =  new v.Documents({
                 el: this.$(".docs"),
-                collection: this.model.docs
+                collection: this.model.docs,
+                db: this.model.db
             });
             all.render();
 
@@ -404,17 +405,19 @@ window.Puton = (function() {
     });
 
     v.Documents = Backbone.View.extend({
-        initialize: function() {
+        initialize: function(opts) {
             this.listenTo(this.collection, "reset", this.render);
             this.listenTo(this.collection, "add", this.render);
             this.listenTo(this.collection, "remove", this.render);
+            this.db = opts.db;
         },
         render: function() {
             var fragment = document.createDocumentFragment();
+            var db = this.db;
             this.collection.each(function(doc){
                 var docview = new v.Document({
                     model: doc,
-                    db: this.db
+                    db: db
                 });
                 fragment.appendChild(docview.render().el);
             });
@@ -449,9 +452,9 @@ window.Puton = (function() {
             });
         },
         renderList: function() {
+            var that = this;
             var $el = this.$el;
             var doc_id = this.doc_id;
-
             this.db.get(doc_id, {
                 revs: true,
                 revs_info: true
@@ -470,7 +473,7 @@ window.Puton = (function() {
                     $fragment.append($tmp);
 
                     if (rev.status === 'available') {
-                        this.db.get(doc_id, {rev: rev.rev}, function(err, doc) {
+                        that.db.get(doc_id, {rev: rev.rev}, function(err, doc) {
                             if (err) {
                                 return console.error(err);
                             }
@@ -630,7 +633,6 @@ window.Puton = (function() {
         revOption: function(e) {
             e.preventDefault();
             e.stopPropagation();
-
             var revisions = new v.Revisions({
                 el: $("#puton-revs-container"),
                 db: this.db,
