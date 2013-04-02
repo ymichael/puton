@@ -185,13 +185,18 @@
 #puton #puton-tab-buttons .puton-tab-button {
   margin-bottom: -1px;
   cursor: pointer;
-  padding: 5px;
+  padding: 5px 15px;
   font-size: 17px;
+  position: relative;
   display: inline-block;
   border-top: solid 1px #ccc;
   border-left: solid 1px #ccc;
   border-right: solid 1px #ccc;
   opacity: 0.5;
+  text-align: center;
+}
+#puton #puton-tab-buttons .puton-tab-button.closeable {
+  padding: 5px 40px 5px 15px;
 }
 #puton #puton-tab-buttons .puton-tab-button:hover {
   opacity: 0.8;
@@ -203,6 +208,27 @@
   border-top: solid 1px #555;
   border-right: solid 1px #555;
   border-left: solid 1px #555;
+}
+#puton #puton-tab-buttons .puton-tab-button .puton-close-tab {
+  padding: 3px;
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  vertical-align: bottom;
+  display: inline-block;
+  border-radius: 20px;
+  background-image: url(/img/close.png);
+  background-repeat: no-repeat;
+  background-size: 100%;
+  background-origin: content-box;
+  border: solid 1px white;
+  cursor: pointer;
+}
+#puton #puton-tab-buttons .puton-tab-button .puton-close-tab:hover {
+  border: solid 1px;
+  background-color: #ccc;
 }
 #puton #puton-log {
   z-index: -100;

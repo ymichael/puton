@@ -26,9 +26,12 @@ window.Puton = (function() {
         },
         start: function() {
             this.render();
-            this.logview = new v.Log({
-                el: this.$("#puton-log")
-            });
+
+            // disable log view
+            // this.logview = new v.Log({
+            //     el: this.$("#puton-log")
+            // });
+
             this.mainPage();
         },
         render: function() {
@@ -197,11 +200,23 @@ window.Puton = (function() {
             "click #adddoc": "addDoc",
             "click #query": "query",
             "deleteDocument": "deleteDocument",
-            "changeTab": "changeTab"
+            "changeTab": "changeTab",
+            "closeTab": "closeTab"
+        },
+        closeTab: function(e, tab) {
+            this.toolbar.removeTab(tab);
+
+            if (tab.isActive()) {
+                var changeTo = this.toolbar.tabs[0];
+                changeTo.view.render();
+                this.toolbar.switchTo(changeTo);
+            }
+
+            this.toolbar.render();
         },
         changeTab: function(e, tab) {
-            tab.render();
-            this.toolbar.active(tab);
+            tab.view.render();
+            this.toolbar.switchTo(tab);
         },
         deleteDocument: function(e, doc_id) {
             var that = this;
@@ -259,11 +274,14 @@ window.Puton = (function() {
                 el: this.$(".puton-docs"),
                 db: this.model.db
             });
-            this.toolbar.addtab(query);
+
             query.render();
+            this.toolbar.addTabFor(query);
         },
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
+
+            // Toolbar
             this.toolbar = new v.Toolbar({
                 el: this.$("#puton-toolbar")
             });
@@ -277,26 +295,44 @@ window.Puton = (function() {
 
             // add tab
             all.tabname = "Main";
-            this.toolbar.addtab(all);
+            this.toolbar.addTabFor(all);
         }
     });
 
     v.Toolbar = Backbone.View.extend({
         initialize: function() {
+            this._index = 0;
             this.tabs = [];
-            this.tabviews = [];
         },
-        addtab: function(tab) {
-            this.tabs.push(tab);
+        addTabFor: function(view) {
+            this.tabs.forEach(function(tab) {
+                tab.active = false;
+            });
+
+            this._index = this._index + 1;
+            this.tabs.push({
+                count: this._index,
+                active: true,
+                view: view
+            });
+
             this.render();
-            this.active(tab);
         },
-        active: function(tab) {
-            _.each(this.tabviews, function(tabview) {
-                if (tabview.view === tab) {
-                    tabview.$el.addClass("active");
+        switchTo: function(tabView) {
+            this._active(tabView);
+            this.render();
+        },
+        removeTab: function(tab) {
+            this.tabs = _.filter(this.tabs, function(t) {
+                return tab.view !== t.view;
+            });
+        },
+        _active: function(tabView) {
+            this.tabs.forEach(function(tab) {
+                if (tabView.view === tab.view) {
+                    tab.active = true;
                 } else {
-                    tabview.$el.removeClass("active");
+                    tab.active = false;
                 }
             });
         },
@@ -304,16 +340,12 @@ window.Puton = (function() {
             this.$el.html(tmpl.toolbar());
             var that = this;
             if (this.tabs.length > 1) {
-                _.each(this.tabs, function(tab, index) {
-                    var x = new v.Tab({
-                        count: index,
-                        view: tab
-                    });
-                    that.tabviews.push(x);
-                    that.$("#puton-tab-buttons").append(x.render().el);
+                _.each(this.tabs, function(tab) {
+                    var tabView = new v.Tab(tab);
+                    that.$("#puton-tab-buttons")
+                        .append(tabView.render().el);
                 });
             }
-
             return this;
         }
     });
@@ -321,17 +353,43 @@ window.Puton = (function() {
     v.Tab = Backbone.View.extend({
         className: "puton-tab-button",
         initialize: function(options) {
+            this._isActive = options.active;
             this.count = options.count;
             this.view = options.view;
         },
         events: {
+            "click .puton-close-tab": "closeTab",
             "click": "changeTab"
         },
-        changeTab: function() {
-            this.$el.trigger("changeTab", this.view);
+        closeTab: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.$el.trigger("closeTab", this);
+        },
+        changeTab: function(e) {
+            this.$el.trigger("changeTab", this);
+        },
+        isActive: function(tab) {
+            return this._isActive;
         },
         render: function() {
-            this.$el.html(this.view.tabname || "Query " + this.count);
+            if (this.view.tabname) {
+                this.$el.html(tmpl.tab({
+                    name: this.view.tabname
+                }));
+            } else {
+                this.$el.html(tmpl.closeabletab({
+                    name: "Query " + this.count
+                }));
+                this.$el.addClass("closeable");
+            }
+
+            if (this.isActive()) {
+                this.$el.addClass("active");
+            } else {
+                this.$el.removeClass("active");
+            }
+
             return this;
         }
     });

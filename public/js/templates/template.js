@@ -116,6 +116,8 @@ tmpl.rev_full = "\
 <pre class='puton-json-view'><code><%= value %></code></pre>";
 
 tmpl.tabbutton = "<a class='tabbutton><%- label %></a>";
+tmpl.tab = "<span><%- name %></span>";
+tmpl.closeabletab = "<span><%- name %></span><div class='puton-close-tab'></div>";
 
 // ## Compile templates/partials
 var compiled = {};
