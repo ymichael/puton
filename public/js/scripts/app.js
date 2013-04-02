@@ -547,14 +547,17 @@ window.Puton = (function() {
                     key: model.toJSON().key || this.model.id,
                     code: JSON.stringify(modelJson, undefined, 2)
                 }));
-                this.codeEdit = CodeMirror.fromTextArea(this.$el.find('.code-edit').get(0),{
-                    lineNumbers: false,
-                    tabSize: 4,
-                    indentUnit: 4,
-                    indentWithTabs: true,
-                    mode: "application/json",
-                    autofocus: true
-                });
+                this.codeEdit = CodeMirror.fromTextArea(
+                    this.$el.find('.puton-code-edit').get(0),
+                    {
+                        lineNumbers: false,
+                        tabSize: 4,
+                        indentUnit: 4,
+                        indentWithTabs: true,
+                        mode: "application/json",
+                        autofocus: true
+                    }
+                );
             }
             return this;
         },
