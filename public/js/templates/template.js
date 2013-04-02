@@ -77,7 +77,8 @@ tmpl.doc_collapsed = "\
 tmpl.doc_edit = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
 <textarea class='puton-code-edit' name='code'><%= code %></textarea>\
-<button class='code-edit-save'>Save</button>";
+<button class='puton-code-edit-cancel'>Cancel</button>\
+<button class='puton-code-edit-save'>Save</button>";
 
 tmpl.tabs = "\
 <div class='docs'></div>";

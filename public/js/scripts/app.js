@@ -583,6 +583,7 @@ window.Puton = (function() {
         render: function() {
             var model = this.model;
             var key = this.model.key();
+
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
                     key: key,
@@ -640,15 +641,15 @@ window.Puton = (function() {
                     throw("Not a valid object");
                 }
 
-                json._id = (this.model.toJSON())._id;
-                json._rev = (this.model.toJSON())._rev;
+                json._id = (self.model.toJSON())._id;
+                json._rev = (self.model.toJSON())._rev;
 
-                this.db.put(json, function(err, res) {
+                self.db.put(json, function(err, res) {
                     if (err) {
                         return console.error(err);
                     }
 
-                    this.db.get(json._id, function(err, res) {
+                    self.db.get(json._id, function(err, res) {
                         if (err) {
                             return console.error(err);
                         }
@@ -664,13 +665,21 @@ window.Puton = (function() {
                 this.render();
             }
         },
+        cancelEdit: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            this.show = "full";
+            this.render();
+        },
         events: {
             "click .revoption": "revOption",
             "click .revtreeoption": "revTreeOption",
             "click .editoption": "editOption",
             "click .deleteoption": "deleteOption",
             "click": "toggleView",
-            "click .code-edit-save": "saveEdit"
+            "click .puton-code-edit-save": "saveEdit",
+            "click .puton-code-edit-cancel": "cancelEdit"
         },
         editOption: function(e) {
             e.preventDefault();
@@ -714,7 +723,7 @@ window.Puton = (function() {
             e.preventDefault();
             e.stopPropagation();
 
-            if (this.show ===  'edit') {
+            if (this.show === 'edit') {
                 return;
             }
 
