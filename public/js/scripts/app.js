@@ -233,8 +233,14 @@ window.Puton = (function() {
         },
         addDoc: function(e) {
             var self = this;
-            var x = prompt("Document: ", '{}').trim();
+            var x = prompt("Document: ", '{}');
+
+            if (!x) {
+                return;
+            }
+
             try {
+                x = x.trim();
                 if (x.length === 0 || x[0] !== '{' || x[x.length-1] !== '}') {
                     throw("Not a valid object");
                 }
