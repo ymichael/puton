@@ -201,7 +201,16 @@ window.Puton = (function() {
             "click #query": "query",
             "deleteDocument": "deleteDocument",
             "changeTab": "changeTab",
-            "closeTab": "closeTab"
+            "closeTab": "closeTab",
+            "showRev": "showRev"
+        },
+        showRev: function(e, rev) {
+            if (this.revisions) {
+                this.revisions.remove();
+            }
+
+            this.revisions = rev;
+            this.$(".puton-revs-container").html(rev.render().el);
         },
         closeTab: function(e, tab) {
             this.toolbar.removeTab(tab);
@@ -503,6 +512,7 @@ window.Puton = (function() {
             } else if (this.type === 'tree') {
                 this.renderTree.apply(this, arguments);
             }
+            return this;
         },
         renderTree: function() {
             var $el = this.$el;
@@ -595,6 +605,12 @@ window.Puton = (function() {
                     key: key,
                     trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
                 }));
+
+                // close rev tree
+                if (this.revisions) {
+                    this.revisions.remove();
+                }
+
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
                     key: key,
@@ -706,24 +722,21 @@ window.Puton = (function() {
         revOption: function(e) {
             e.preventDefault();
             e.stopPropagation();
-            var revisions = new v.Revisions({
-                el: $(".puton-revs-container"),
-                db: this.db,
-                doc_id: (this.model.toJSON())._id,
-                type: 'list'
-            });
-            revisions.render();
+            this.showRev("list");
         },
         revTreeOption: function(e) {
             e.preventDefault();
             e.stopPropagation();
-            var revisions = new v.Revisions({
-                el: $(".puton-revs-container"),
+            this.showRev("tree");
+        },
+        showRev: function(type) {
+            this.revisions = new v.Revisions({
                 db: this.db,
                 doc_id: (this.model.toJSON())._id,
-                type: 'tree'
+                type: type
             });
-            revisions.render();
+
+            this.$el.trigger("showRev", this.revisions);
         },
         toggleView: function(e) {
             e.preventDefault();
