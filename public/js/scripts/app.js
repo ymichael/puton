@@ -231,7 +231,13 @@ window.Puton = (function() {
                     throw("Not a valid object");
                 }
 
-                self.model.db.put(x, function(err, res) {
+                var method = self.model.db.post;
+
+                if (typeof x._id !== 'undefined') {
+                    method = self.model.db.put;
+                }
+
+                method.call(self.model.db, x, function(err, res) {
                     if (err) {
                         console.error(err);
                     }
