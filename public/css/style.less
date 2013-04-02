@@ -189,14 +189,29 @@
     #puton-tab-buttons {
         text-align: left;
         border-top: solid 1px #eee;
+        border-bottom: solid 1px;
         padding-top: 10px;
         margin-top: 10px;
         .puton-tab-button {
-            margin-right: 10px;
+            margin-bottom: -1px;
+            cursor: pointer;
+            padding: 5px;
             font-size: 17px;
             display: inline-block;
+            border-top: solid 1px #ccc;
+            border-left: solid 1px #ccc;
+            border-right: solid 1px #ccc;
+            opacity: 0.5;
+            &:hover {
+                opacity: 0.8;
+            }
             &.active {
-                border-bottom: solid 4px @selected;
+                opacity: 1;
+                cursor: auto;
+                border-bottom: solid 1px white;
+                border-top: solid 1px #555;
+                border-right: solid 1px #555;
+                border-left: solid 1px #555;
             }
         }
     }
