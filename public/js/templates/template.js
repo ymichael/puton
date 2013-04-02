@@ -68,11 +68,11 @@ tmpl.doc_full = "\
 <a class='option editoption'>edit</a>&nbsp;\
 <a class='option deleteoption'>delete</a>\
 </div>\
-<pre class='puton-json-view'><code><%= value %></code></pre>";
+<pre class='puton-json-view'><code><%= Puton.utils.syntaxHighlight(value) %></code></pre>";
 
 tmpl.doc_collapsed = "\
 <h3 class='puton-doc-key'><%- key %></h3>\
-<pre class='puton-json-view'><code><%= trunc %><code></pre>";
+<pre class='puton-json-view'><code><%= Puton.utils.syntaxHighlight(trunc) %><code></pre>";
 
 tmpl.doc_edit = "\
 <h3 class='puton-doc-key'><%- key %></h3>\

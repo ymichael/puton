@@ -61,6 +61,7 @@ window.Puton = (function() {
                 }
 
                 var database = new m.DB(null, {db: db});
+                database.fetch();
                 that.changeView(null, database);
             });
         },
@@ -337,7 +338,7 @@ window.Puton = (function() {
         initialize: function(opts) {
             this.state = 0;
             this.db = opts.db;
-            this.docs = new m.Documents(null, {db: this.db, populate: false});
+            this.docs = new m.Documents(null, {db: this.db});
         },
         events: {
             'click .run': 'runQuery'
@@ -361,13 +362,11 @@ window.Puton = (function() {
             });
             self.cm.map.focus();
 
-
             this.documentsView =  new v.Documents({
                 el: this.$el.find(".docs"),
                 collection: this.docs
             });
             this.documentsView.render();
-
         },
         runQuery: function() {
             var self = this;
@@ -522,18 +521,21 @@ window.Puton = (function() {
         },
         render: function() {
             var model = this.model;
+            var key = this.model.key();
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
-                    key: model.toJSON().key || this.model.id,
-                    trunc: Puton.utils.syntaxHighlight(JSON.stringify(model.toJSON()).substring(0, 50) + "...")
+                    key: key,
+                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
                 }));
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
-                    key: model.toJSON().key || this.model.id,
-                    value: Puton.utils.syntaxHighlight(model.toJSON())
+                    key: key,
+                    value: model.toJSON()
                 }));
+
                 if (!this.model.id) {
-                    // todo: more proper hiding of edit/delete
+                    // TODO
+                    // proper hiding of edit/delete
                     this.$el.find('.optionsbar').hide();
                 }
             } else if (this.show === 'edit') {
@@ -543,10 +545,12 @@ window.Puton = (function() {
                         delete modelJson[key];
                     }
                 });
+
                 this.$el.html(tmpl.doc_edit({
-                    key: model.toJSON().key || this.model.id,
-                    code: JSON.stringify(modelJson, undefined, 2)
+                    key: key,
+                    code: JSON.stringify(modelJson, undefined, 4)
                 }));
+
                 this.codeEdit = CodeMirror.fromTextArea(
                     this.$el.find('.puton-code-edit').get(0),
                     {
@@ -558,6 +562,7 @@ window.Puton = (function() {
                         autofocus: true
                     }
                 );
+
             }
             return this;
         },
@@ -669,29 +674,36 @@ window.Puton = (function() {
 
     Backbone.Model.prototype.idAttribute = "_id";
 
-    m.Document = Backbone.Model.extend({});
+    m.Document = Backbone.Model.extend({
+        key: function() {
+            return this.get('key') || this.id;
+        }
+    });
 
     m.Documents = Backbone.Collection.extend({
+        model: m.Document,
         initialize: function(models, options) {
             var that = this;
             this.db = options.db;
-            if ('populate' in options && options.populate === false) {
-            } else {
-                this.db.allDocs({include_docs: true}, function(err, res) {
-                    that.add(_.pluck(res.rows, "doc"));
-                });
-            }
         },
-        model: m.Document
+        fetch: function() {
+            var that = this;
+            this.db.allDocs({
+                include_docs: true
+            }, function(err, res) {
+                that.add(_.pluck(res.rows, "doc"));
+            });
+        }
     });
 
     m.DB = Backbone.Model.extend({
         initialize: function(attr, options) {
-            var that = this;
             this.db = options.db;
             this.docs = new m.Documents(null, {db: this.db});
-
-            // bootstrap database
+            this.docs.fetch();
+        },
+        fetch: function() {
+            var that = this;
             this.db.info(function(err, info) {
                 that.set(info);
             });
