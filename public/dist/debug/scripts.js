@@ -73,7 +73,7 @@ tmpl.db = "\
 </div>";
 
 tmpl.doc_full = "\
-<h3 class='puton-doc-key'><%- key %></h3>\
+<h3 class='puton-doc-key'><%- key %><small><%- rev%></small></h3>\
 <div class='puton-doc-optionsbar'>\
 <a class='option revtreeoption'>rev-tree</a>&nbsp;\
 <a class='option revoption'>rev-list</a>&nbsp;\
@@ -83,11 +83,11 @@ tmpl.doc_full = "\
 <pre class='puton-json-view'><code><%= Puton.utils.syntaxHighlight(value) %></code></pre>";
 
 tmpl.doc_collapsed = "\
-<h3 class='puton-doc-key'><%- key %></h3>\
+<h3 class='puton-doc-key'><%- key %><small><%- rev%></small></h3>\
 <pre class='puton-json-view'><code><%= Puton.utils.syntaxHighlight(trunc) %><code></pre>";
 
 tmpl.doc_edit = "\
-<h3 class='puton-doc-key'><%- key %></h3>\
+<h3 class='puton-doc-key'><%- key %><small><%- rev %></small></h3>\
 <textarea class='puton-code-edit' name='code'><%= code %></textarea>\
 <button class='puton-code-edit-cancel'>Cancel</button>\
 <button class='puton-code-edit-save'>Save</button>";
@@ -787,11 +787,13 @@ window.Puton = (function() {
         render: function() {
             var model = this.model;
             var key = this.model.key();
+            var rev = this.model.rev();
 
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
                     key: key,
-                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
+                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "...",
+                    rev: rev
                 }));
 
                 // close rev tree
@@ -802,7 +804,8 @@ window.Puton = (function() {
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
                     key: key,
-                    value: model.toJSON()
+                    value: model.toJSON(),
+                    rev: rev
                 }));
 
                 if (!this.model.id) {
@@ -820,7 +823,8 @@ window.Puton = (function() {
 
                 this.$el.html(tmpl.doc_edit({
                     key: key,
-                    code: JSON.stringify(modelJson, undefined, 4)
+                    code: JSON.stringify(modelJson, undefined, 4),
+                    rev: rev
                 }));
 
                 this.codeEdit = CodeMirror.fromTextArea(
@@ -953,6 +957,9 @@ window.Puton = (function() {
     m.Document = Backbone.Model.extend({
         key: function() {
             return this.get('key') || this.id;
+        },
+        rev: function() {
+            return this.attributes._rev;
         }
     });
 

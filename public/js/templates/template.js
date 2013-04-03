@@ -73,7 +73,7 @@ tmpl.db = "\
 </div>";
 
 tmpl.doc_full = "\
-<h3 class='puton-doc-key'><%- key %></h3>\
+<h3 class='puton-doc-key'><%- key %><small><%- rev%></small></h3>\
 <div class='puton-doc-optionsbar'>\
 <a class='option revtreeoption'>rev-tree</a>&nbsp;\
 <a class='option revoption'>rev-list</a>&nbsp;\
@@ -83,11 +83,11 @@ tmpl.doc_full = "\
 <pre class='puton-json-view'><code><%= Puton.utils.syntaxHighlight(value) %></code></pre>";
 
 tmpl.doc_collapsed = "\
-<h3 class='puton-doc-key'><%- key %></h3>\
+<h3 class='puton-doc-key'><%- key %><small><%- rev%></small></h3>\
 <pre class='puton-json-view'><code><%= Puton.utils.syntaxHighlight(trunc) %><code></pre>";
 
 tmpl.doc_edit = "\
-<h3 class='puton-doc-key'><%- key %></h3>\
+<h3 class='puton-doc-key'><%- key %><small><%- rev %></small></h3>\
 <textarea class='puton-code-edit' name='code'><%= code %></textarea>\
 <button class='puton-code-edit-cancel'>Cancel</button>\
 <button class='puton-code-edit-save'>Save</button>";

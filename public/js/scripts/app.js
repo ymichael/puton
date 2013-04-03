@@ -636,11 +636,13 @@ window.Puton = (function() {
         render: function() {
             var model = this.model;
             var key = this.model.key();
+            var rev = this.model.rev();
 
             if (this.show === "collapsed") {
                 this.$el.html(tmpl.doc_collapsed({
                     key: key,
-                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "..."
+                    trunc: JSON.stringify(model.toJSON()).substring(0, 50) + "...",
+                    rev: rev
                 }));
 
                 // close rev tree
@@ -651,7 +653,8 @@ window.Puton = (function() {
             } else if (this.show === 'full') {
                 this.$el.html(tmpl.doc_full({
                     key: key,
-                    value: model.toJSON()
+                    value: model.toJSON(),
+                    rev: rev
                 }));
 
                 if (!this.model.id) {
@@ -669,7 +672,8 @@ window.Puton = (function() {
 
                 this.$el.html(tmpl.doc_edit({
                     key: key,
-                    code: JSON.stringify(modelJson, undefined, 4)
+                    code: JSON.stringify(modelJson, undefined, 4),
+                    rev: rev
                 }));
 
                 this.codeEdit = CodeMirror.fromTextArea(
@@ -802,6 +806,9 @@ window.Puton = (function() {
     m.Document = Backbone.Model.extend({
         key: function() {
             return this.get('key') || this.id;
+        },
+        rev: function() {
+            return this.attributes._rev;
         }
     });
 
