@@ -688,6 +688,21 @@ window.Puton = (function() {
             return this;
         },
         saveEdit: function(e) {
+
+            function parseJSON(json) {
+                var tr = false;
+                try {
+                    tr = JSON.parse(json);
+                } catch(err) {
+                    try {
+                        tr = $.parseJSON(json);
+                    } catch(err2) {
+                        tr = eval('('+json+')');
+                    }
+                }
+                return tr;
+            }
+
             var self = this;
             e.preventDefault();
             e.stopPropagation();
@@ -696,7 +711,7 @@ window.Puton = (function() {
             try {
                 if (!json || json[0] !== '{' ||
                     json[json.length-1] !== '}' ||
-                    (json = JSON.parse(json)) === false) {
+                    (json = parseJSON(json)) === false) {
                     throw("Not a valid object");
                 }
 
@@ -719,7 +734,7 @@ window.Puton = (function() {
                     });
                 });
             } catch (err) {
-                console.error(err);
+                (err);
                 this.show = "full";
                 this.render();
             }
