@@ -734,7 +734,7 @@ window.Puton = (function() {
                     });
                 });
             } catch (err) {
-                (err);
+                console.error(err);
                 this.show = "full";
                 this.render();
             }
