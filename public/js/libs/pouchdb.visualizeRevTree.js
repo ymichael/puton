@@ -24,38 +24,17 @@ var visualizeRevTree = function(db) {
     head.appendChild(styleNode);
   }
 
-
   var grid = 10;
   var scale = 7;
   var r = 1;
 
-
   // see: pouch.utils.js
-  var traverseRevTree = function(revs, callback) {
-    var toVisit = [];
-
-
-    revs.forEach(function(tree) {
-      toVisit.push({pos: tree.pos, ids: tree.ids});
-    });
-
-
-    while (toVisit.length > 0) {
-      var node = toVisit.pop(),
-      pos = node.pos,
-      tree = node.ids;
-      var newCtx = callback(tree[1].length === 0, pos, tree[0], node.ctx);
-      tree[1].forEach(function(branch) {
-        toVisit.push({pos: pos+1, ids: branch, ctx: newCtx});
-      });
-    }
-  };
   var revisionsToPath = function(revisions){
-    var tree = [revisions.ids[0], []];
+    var tree = [revisions.ids[0], {}, []];
     var i, rev;
     for(i = 1; i < revisions.ids.length; i++){
       rev = revisions.ids[i];
-      tree = [rev, [tree]];
+      tree = [rev, {}, [tree]];
     }
     return {
       pos: revisions.start - revisions.ids.length + 1,
@@ -81,7 +60,6 @@ var visualizeRevTree = function(db) {
     return com;
   };
 
-
   var putAfter = function(doc, prevRev, callback){
     var newDoc = JSON.parse(JSON.stringify(doc));
     newDoc._revisions = {
@@ -93,7 +71,6 @@ var visualizeRevTree = function(db) {
     };
     db.put(newDoc, {new_edits: false}, callback);
   };
-
 
   var visualize = function(docId, opts, callback) {
     if (typeof opts === 'function') {
@@ -137,13 +114,11 @@ var visualizeRevTree = function(db) {
     var textsBox = document.createElementNS(svgNS, "g");
     svg.appendChild(textsBox);
 
-
     // first we need to download all data using public API
     var tree = [];
     var deleted = {};
     var winner;
     var allRevs = [];
-
 
     // consider using revs=true&open_revs=all to get everything in one query
     db.get(docId, function(err, doc){ // get winning revision here
@@ -179,7 +154,6 @@ var visualizeRevTree = function(db) {
       });
     });
 
-
     var focusedInput;
     function input(text){
       var div = document.createElement('div');
@@ -189,7 +163,6 @@ var visualizeRevTree = function(db) {
       span.appendChild(document.createTextNode(text));
       var clicked = false;
       var input;
-
 
       div.ondblclick = function() {
         if(clicked){
@@ -202,7 +175,6 @@ var visualizeRevTree = function(db) {
         div.appendChild(input);
         input.value = text;
         input.focus();
-
 
         input.onkeydown = function(e){
           if(e.keyCode === 9 && !e.shiftKey){
@@ -220,18 +192,15 @@ var visualizeRevTree = function(db) {
       return div;
     }
 
-
     function node(x, y, rev, isLeaf, isDeleted, isWinner, shortDescLen){
         var nodeEl = circ(x, y, r, isLeaf, rev in deleted, rev === winner);
         var pos = rev.split('-')[0];
         var id = rev.split('-')[1];
         var opened = false;
 
-
         var click = function() {
           if (opened) return;
           opened = true;
-
 
           var div = document.createElement('div');
           div.classList.add("editor");
@@ -241,12 +210,10 @@ var visualizeRevTree = function(db) {
           div.style.zIndex = 1000;
           box.appendChild(div);
 
-
           var close = function() {
             div.parentNode.removeChild(div);
             opened = false;
           };
-
 
           db.get(docId, {rev: rev}, function(err, doc){
             var dl = document.createElement('dl');
@@ -290,7 +257,7 @@ var visualizeRevTree = function(db) {
                 if (!err) {
                   close();
                 } else {
-                  console.log(err);
+                  console.error(err);
                   alert("error occured, see console");
                 }
               });
@@ -311,7 +278,6 @@ var visualizeRevTree = function(db) {
           //text.style.display = "none";
         };
 
-
         var text = document.createElement('div');
         //text.style.display = "none";
         text.classList.add("box");
@@ -331,20 +297,17 @@ var visualizeRevTree = function(db) {
     }
 
 
-
-
     function draw(forest){
       var minUniq = minUniqueLength(allRevs);
       var maxX = grid;
       var maxY = grid;
       var levelCount = []; // numer of nodes on some level (pos)
-      traverseRevTree(forest, function(isLeaf, pos, id, ctx) {
+      Pouch.merge.traverseRevTree(forest, function(isLeaf, pos, id, ctx) {
         if (!levelCount[pos]) {
           levelCount[pos] = 1;
         } else {
           levelCount[pos]++;
         }
-
 
         var rev = pos + '-' + id;
         var x = levelCount[pos] * grid;
@@ -352,12 +315,10 @@ var visualizeRevTree = function(db) {
         maxX = Math.max(maxX, x);
         maxY = Math.max(maxY, y);
 
-
         node(x, y, rev, isLeaf, rev in deleted, rev === winner, minUniq);
 
-
         if (ctx) {
-          line(x, y, ctx.x, ctx.y); 
+          line(x, y, ctx.x, ctx.y);
         }
         return {x: x, y: y};
       });
