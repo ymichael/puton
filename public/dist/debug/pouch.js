@@ -797,7 +797,7 @@ Pouch.destroy = function(name, callback) {
     // call destroy method of the particular adaptor
     Pouch.adapters[opts.adapter].destroy(opts.name, callback);
   };
- 
+
   // remove Pouch from allDBs
   Pouch.removeFromAllDbs(opts, cb);
 };
@@ -820,7 +820,7 @@ Pouch.removeFromAllDbs = function(opts, callback) {
   new Pouch(Pouch.allDBName(opts.adapter), function(err, db) {
     if (err) {
       // don't fail when allDbs fail
-      console.log(err);
+      console.error(err);
       callback();
       return;
     }
@@ -832,14 +832,14 @@ Pouch.removeFromAllDbs = function(opts, callback) {
       } else {
         db.remove(doc, function(err, response) {
           if (err) {
-            console.log(err);
+            console.error(err);
           }
           callback();
         });
       }
     });
   });
- 
+
 };
 
 Pouch.adapter = function (id, obj) {
@@ -884,7 +884,7 @@ Pouch.open = function(opts, callback) {
   new Pouch(Pouch.allDBName(adapter), function(err, db) {
     if (err) {
       // don't fail when allDb registration fails
-      console.log(err);
+      console.error(err);
       callback();
       return;
     }
@@ -895,10 +895,10 @@ Pouch.open = function(opts, callback) {
       if (err && err.status === 404) {
         db.put({
           _id: dbname,
-          dbname: opts.originalName 
+          dbname: opts.originalName
         }, function(err) {
             if (err) {
-                console.log(err);
+                console.error(err);
             }
 
             callback();
@@ -1499,6 +1499,7 @@ function replicate(src, target, opts, promise) {
   var pending = 0;
   var last_seq = 0;
   var continuous = opts.continuous || false;
+  var doc_ids = opts.doc_ids;
   var result = {
     ok: true,
     start_time: new Date(),
@@ -1612,7 +1613,8 @@ function replicate(src, target, opts, promise) {
       since: last_seq,
       style: 'all_docs',
       onChange: onChange,
-      complete: complete
+      complete: complete,
+      doc_ids: doc_ids
     };
 
     if (opts.filter) {
@@ -1881,6 +1883,9 @@ var filterChange = function(opts) {
     var req = {};
     req.query = opts.query_params;
     if (opts.filter && !opts.filter.call(this, change.doc, req)) {
+      return;
+    }
+    if (opts.doc_ids && opts.doc_ids.indexOf(change.id) !== -1) {
       return;
     }
     if (!opts.include_docs) {
@@ -3172,6 +3177,11 @@ var HttpPouch = function(opts, callback) {
       params.push('endkey=' + encodeURIComponent(JSON.stringify(opts.endkey)));
     }
 
+    // If opts.limit exists, add the limit value to the parameter list.
+    if (opts.limit) {
+      params.push('limit=' + opts.limit);
+    }
+
     // Format the list of parameters into a valid URI query string
     params = params.join('&');
     if (params !== '') {
@@ -3311,6 +3321,9 @@ var HttpPouch = function(opts, callback) {
             return;
           }
 
+          if (opts.doc_ids && opts.doc_ids.indexOf(c.id) !== -1) {
+            return;
+          }
           // Process the change
           call(opts.onChange, c);
         });
@@ -4002,7 +4015,7 @@ var IdbPouch = function(opts, callback) {
       }
       call(callback, null, {
         total_rows: results.length,
-        rows: results
+        rows: ('limit' in opts) ? results.slice(0, opts.limit) : results
       });
     };
 
@@ -4850,7 +4863,7 @@ var webSqlPouch = function(opts, callback) {
       }
       call(callback, null, {
         total_rows: results.length,
-        rows: results
+        rows: ('limit' in opts) ? results.slice(0, opts.limit) : results
       });
     });
   };
@@ -5005,7 +5018,6 @@ var webSqlPouch = function(opts, callback) {
     db.transaction(function (tx) {
       var sql = 'DELETE FROM ' + BY_SEQ_STORE + ' WHERE doc_id_rev IN (' +
         revs.map(function(rev){return quote(docId + '::' + rev);}).join(',') + ')';
-      console.log(sql);
       tx.executeSql(sql, [], function(tx, result) {
         callback();
       });
@@ -5121,7 +5133,9 @@ var MapReduce = function(db) {
         }
         if (options.reduce === false) {
           return options.complete(null, {
-            rows: results,
+            rows: ('limit' in options)
+              ? results.slice(0, options.limit)
+              : results,
             total_rows: results.length
           });
         }
@@ -5140,7 +5154,12 @@ var MapReduce = function(db) {
           e.value = fun.reduce(e.key, e.value) || null;
           e.key = e.key[0][0];
         });
-        options.complete(null, {rows: groups, total_rows: groups.length});
+        options.complete(null, {
+          rows: ('limit' in options)
+            ? groups.slice(0, options.limit)
+            : groups,
+          total_rows: groups.length
+        });
       }
     }
 
