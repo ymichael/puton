@@ -102,6 +102,7 @@ tmpl.queryInput = "\
 \n\
 \n\
 \n\}</textarea>\
+<br/>\
     Reduce: \
     <textarea class='puton-code-edit puton-code-reduce' name='reduce'>\
 \n\
