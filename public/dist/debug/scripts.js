@@ -102,6 +102,7 @@ tmpl.queryInput = "\
 \n\
 \n\
 \n\}</textarea>\
+<br/>\
     Reduce: \
     <textarea class='puton-code-edit puton-code-reduce' name='reduce'>\
 \n\
@@ -394,8 +395,9 @@ window.Puton = (function() {
             this.toolbar.render();
         },
         changeTab: function(e, tab) {
-            tab.view.render();
             this.toolbar.switchTo(tab);
+            this.$(".puton-docs").html(tab.view.$el);
+            tab.view.rebindEvents();
         },
         deleteDocument: function(e, doc_id) {
             var that = this;
@@ -466,19 +468,18 @@ window.Puton = (function() {
             this.cm = CodeMirror.fromTextArea(this.addDocForm.$("textarea")[0], {
                 lineNumbers: true,
                 tabSize: 4,
-                indentUnit: 4,
                 autofocus: true,
-                indentWithTabs: true,
-                mode: "text/javascript"
+                mode: "text/json"
             });
         },
         query: function() {
             var query = new v.Query({
-                el: this.$(".puton-docs"),
                 db: this.model.db
             });
 
-            query.render();
+            this.$(".puton-docs").html(query.render().el);
+            query.initCodeMirror();
+
             this.toolbar.addTabFor(query);
         },
         render: function() {
@@ -490,11 +491,11 @@ window.Puton = (function() {
             });
 
             var all =  new v.Documents({
-                el: this.$(".puton-docs"),
                 collection: this.model.docs,
                 db: this.model.db
             });
-            all.render();
+
+            this.$(".puton-docs").html(all.render().el);
 
             // add tab
             all.tabname = "Main";
@@ -606,16 +607,27 @@ window.Puton = (function() {
         events: {
             'click .puton-run-query': 'runQuery'
         },
+        rebindEvents: function() {
+            this.delegateEvents();
+            this.documentsView.rebindEvents();
+        },
         render: function() {
             var self = this;
             if (this.state === 0) {
                 this.$el.html(tmpl.queryInput());
             }
 
-            var map = false;
+            this.documentsView =  new v.Documents({
+                collection: this.docs
+            });
+            this.$(".docs").html(this.documentsView.render().el);
+            return this;
+        },
+        initCodeMirror: function() {
+            var self = this;
             self.cm = {};
             ['map','reduce'].forEach(function(el) {
-                self.cm[el]  = CodeMirror.fromTextArea(self.$el.find('.puton-code-' + el).get(0),{
+                self.cm[el]  = CodeMirror.fromTextArea(self.$('.puton-code-' + el).get(0),{
                     lineNumbers: true,
                     tabSize: 4,
                     indentUnit: 4,
@@ -624,12 +636,6 @@ window.Puton = (function() {
                 });
             });
             self.cm.map.focus();
-
-            this.documentsView =  new v.Documents({
-                el: this.$el.find(".docs"),
-                collection: this.docs
-            });
-            this.documentsView.render();
         },
         runQuery: function() {
             var self = this;
@@ -672,19 +678,31 @@ window.Puton = (function() {
             this.listenTo(this.collection, "add", this.render);
             this.listenTo(this.collection, "remove", this.render);
             this.db = opts.db;
+            this.docViews = [];
+        },
+        rebindEvents: function() {
+            this.docViews.forEach(function(docView) {
+                docView.delegateEvents();
+            });
         },
         render: function() {
+            this.$el.html(tmpl.documents());
+
             var fragment = document.createDocumentFragment();
             var db = this.db;
+            var that = this;
             this.collection.each(function(doc){
                 var docview = new v.Document({
                     model: doc,
                     db: db
                 });
+                that.docViews.push(docview);
                 fragment.appendChild(docview.render().el);
             });
-            this.$el.html(tmpl.documents);
-            this.$el.find('.puton-docs-container').html(fragment);
+
+            this.$('.puton-docs-container').html(fragment);
+
+            return this;
         }
     });
 
