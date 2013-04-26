@@ -57,16 +57,17 @@ tmpl.log = "\
     <%- log %>\
 </p>";
 
+tmpl.dbinfo = "\
+&middot;\
+<b>doc_count: </b>\
+<%- doc_count %>\
+&middot;\
+<b>update_seq: </b>\
+<%- update_seq %>";
+
 tmpl.db = "\
 <h2 id='puton-dbname'><%- db_name %></h2>\
-<p class='puton-dbinfo'>\
-    &middot;\
-    <b>doc_count: </b>\
-    <%- doc_count %>\
-    &middot;\
-    <b>update_seq: </b>\
-    <%- update_seq %>\
-</p>\
+<p class='puton-dbinfo'></p>\
 <div id='puton-toolbar'></div>\
 <div id='puton-tabs'>\
     <div class='puton-docs'></div>\
@@ -222,8 +223,10 @@ window.Puton = (function() {
             });
         },
         changeView: function(e, model) {
-            // TODO.
-            // garbage collection
+            if (this.currentView) {
+                this.currentView.$el.off();
+            }
+
             this.currentView = new v.DB({
                 el: this.$("#puton-main"),
                 model: model
@@ -358,13 +361,14 @@ window.Puton = (function() {
             this.$el.trigger("addDocSave");
         },
         cancel: function(e) {
+            console.log('asdf');
             this.remove();
         }
     });
 
     v.DB = Backbone.View.extend({
         initialize: function() {
-            this.listenTo(this.model, "all", this.render);
+            this.listenTo(this.model, "all", this.update);
         },
         events: {
             "click #adddoc": "addDoc",
@@ -419,6 +423,11 @@ window.Puton = (function() {
                 return;
             }
 
+            // dont allow empty objects.
+            if (x.replace(/\s/g, "") === "{}") {
+                return;
+            }
+
             // Close form
             this.addDocForm.remove();
 
@@ -427,6 +436,7 @@ window.Puton = (function() {
                 if (x.length === 0 || x[0] !== '{' || x[x.length-1] !== '}') {
                     throw("Not a valid object");
                 }
+
                 try {
                     x = JSON.parse(x);
                 } catch (err) {
@@ -451,6 +461,9 @@ window.Puton = (function() {
                         self.model.docs.add(res, {
                             at: 0
                         });
+
+                        // update db info
+                        self.model.fetch();
                     });
                 });
 
@@ -482,8 +495,13 @@ window.Puton = (function() {
 
             this.toolbar.addTabFor(query);
         },
+        update: function() {
+            this.$("#puton-dbname").html(this.model.get("db_name"));
+            this.$(".puton-dbinfo").html(tmpl.dbinfo(this.model.toJSON()));
+        },
         render: function() {
             this.$el.html(tmpl.db(this.model.toJSON()));
+            this.update();
 
             // Toolbar
             this.toolbar = new v.Toolbar({

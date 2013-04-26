@@ -270,6 +270,11 @@ window.Puton = (function() {
                 return;
             }
 
+            // dont allow empty objects.
+            if (x.replace(/\s/g, "") === "{}") {
+                return;
+            }
+
             // Close form
             this.addDocForm.remove();
 
@@ -283,11 +288,6 @@ window.Puton = (function() {
                     x = JSON.parse(x);
                 } catch (err) {
                     eval("x="+x);
-                }
-
-                // dont allow empty objects.
-                if (x.replace(/\s/g, "") === "{}") {
-                    return;
                 }
 
                 if (typeof x !== 'object') {
