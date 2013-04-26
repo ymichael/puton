@@ -57,16 +57,17 @@ tmpl.log = "\
     <%- log %>\
 </p>";
 
+tmpl.dbinfo = "\
+&middot;\
+<b>doc_count: </b>\
+<%- doc_count %>\
+&middot;\
+<b>update_seq: </b>\
+<%- update_seq %>";
+
 tmpl.db = "\
 <h2 id='puton-dbname'><%- db_name %></h2>\
-<p class='puton-dbinfo'>\
-    &middot;\
-    <b>doc_count: </b>\
-    <%- doc_count %>\
-    &middot;\
-    <b>update_seq: </b>\
-    <%- update_seq %>\
-</p>\
+<p class='puton-dbinfo'></p>\
 <div id='puton-toolbar'></div>\
 <div id='puton-tabs'>\
     <div class='puton-docs'></div>\
