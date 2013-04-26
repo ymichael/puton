@@ -208,7 +208,6 @@ window.Puton = (function() {
             this.$el.trigger("addDocSave");
         },
         cancel: function(e) {
-            console.log('asdf');
             this.remove();
         }
     });
