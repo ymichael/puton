@@ -1,7 +1,6 @@
 # Puton (Futon for PouchDB)
-[![Nodejitsu Deploy Status Badges](https://webhooks.nodejitsu.com/ymichael/puton.png)](https://webops.nodejitsu.com#nodejitsu/webhooks)
 
-[![Build Status](https://travis-ci.org/ymichael/puton.png)](https://travis-ci.org/ymichael/puton)
+__**Puton is no longer maintained. Check out the [PouchDB inspector for Chrome](https://chrome.google.com/webstore/detail/pouchdb-inspector/hbhhpaojmpfimakffndmpmpndcmonkfa) and [PouchDB inspector for Firefox](https://addons.mozilla.org/en-US/firefox/addon/pouchdb-inspector/)__
 
 Puton is to [PouchDB][1] what Futon is to [CouchDB][2].
 
